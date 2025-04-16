@@ -1,19 +1,35 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 import pandas as pd
-import numpy as np
 
 app = FastAPI()
 
 excel_path = "backend/yeni_bosch_fiyatlari.xlsm"
 sheets = pd.read_excel(excel_path, sheet_name=None)
 
-def parse_miktar(miktar_str):
+def parse_miktar(birim_str):
     try:
-        num = str(miktar_str).split()[0].replace(",", ".")
-        return float(num)
+        if pd.isna(birim_str):
+            return 1
+        value = str(birim_str).split()[0].replace(",", ".")
+        return float(value)
     except:
         return 1
+
+def parse_row(row):
+    fiyat = row.get("Tavsiye Edilen Satış Fiyatı", 0)
+    birim = row.get("Birim", "1")
+    if pd.isna(fiyat): fiyat = 0
+    if pd.isna(birim): birim = "1"
+    miktar = parse_miktar(birim)
+    toplam = round(fiyat * miktar)
+    return {
+        "kategori": row["KATEGORİ"],
+        "urun_tip": row["ÜRÜN/TİP"],
+        "birim": miktar,
+        "fiyat": fiyat,
+        "toplam": toplam
+    }
 
 @app.get("/api/brands")
 def get_brands():
@@ -30,42 +46,37 @@ def get_parts(brand: str, model: str):
     df = sheets["02_TavsiyeEdilenBakımListesi"]
     df = df[(df["MARKA"] == brand) & (df["MODEL"] == model)]
 
-    def parse_row(row):
-        fiyat = row.get("Tavsiye Edilen Satış Fiyatı", 0)
-        birim = row.get("Birim", "1")
-        if pd.isna(fiyat): fiyat = 0
-        if pd.isna(birim): birim = "1"
-        miktar = parse_miktar(birim)
-        toplam = round(fiyat * miktar)
-        return {
-            "kategori": row["KATEGORİ"],
-            "urun_tip": row["ÜRÜN/TİP"],
-            "birim": birim,
-            "fiyat": fiyat,
-            "toplam": toplam
-        }
-
-    def fetch_parts(keyword, is_labor=False):
-        filt = (df["ÜRÜN/TİP"].str.contains(keyword, na=False)) & ((df["KATEGORİ"] == "İşçilik") if is_labor else (df["KATEGORİ"] != "İşçilik"))
-        return [parse_row(row) for _, row in df[filt].iterrows()]
-
-    base_keywords = ["MotorYağ", "YağFiltresi", "HavaFiltresi", "PolenFiltre", "YakıtFiltresi"]
+    # Zorunlu parçalar
+    fixed_keywords = ["MotorYağ", "YağFiltresi", "HavaFiltresi", "PolenFiltre", "YakıtFiltresi"]
     base_parts = []
-    for kw in base_keywords:
-        parts = fetch_parts(kw)
-        if parts:
-            base_parts.append(parts[0])
+    for key in fixed_keywords:
+        part_match = df[(df["KATEGORİ"] != "İşçilik") & (df["ÜRÜN/TİP"].str.contains(key, na=False))]
+        if not part_match.empty:
+            base_parts.append(parse_row(part_match.iloc[0]))
+
+    # Opsiyonel + işçilik
+    def get_optional(keyword_part, keyword_labor):
+        parts = []
+        match_part = df[(df["KATEGORİ"] != "İşçilik") & (df["ÜRÜN/TİP"].str.contains(keyword_part, na=False))]
+        match_labor = df[(df["KATEGORİ"] == "İşçilik") & (df["ÜRÜN/TİP"].str.contains(keyword_labor, na=False))]
+        if not match_part.empty:
+            parts.append(parse_row(match_part.iloc[0]))
+        if not match_labor.empty:
+            parts.append(parse_row(match_labor.iloc[0]))
+        return parts
 
     optional = {
-        "buji": fetch_parts("Buji") + fetch_parts("BujiDeğişim", is_labor=True),
-        "balata": fetch_parts("ÖnFrenBalata") + fetch_parts("Balata", is_labor=True),
-        "disk": fetch_parts("ÖnFrenDisk") + fetch_parts("Disk", is_labor=True)
+        "buji": get_optional("Buji", "BujiDeğişim"),
+        "balata": get_optional("ÖnFrenBalata", "Balata"),
+        "disk": get_optional("ÖnFrenDisk", "Disk")
     }
 
-    labor_match = df[(df["KATEGORİ"] == "İşçilik") & (df["ÜRÜN/TİP"].str.contains("Periyodik", na=False))]
-    labor = parse_row(labor_match.iloc[0]) if not labor_match.empty else {
-        "kategori": "İşçilik", "urun_tip": "Periyodik Bakım", "birim": "1", "fiyat": 0, "toplam": 0
-    }
+    # Periyodik bakım işçiliği
+    match_labor = df[(df["KATEGORİ"] == "İşçilik") & (df["ÜRÜN/TİP"].str.contains("Periyodik", na=False))]
+    if not match_labor.empty:
+        labor = parse_row(match_labor.iloc[0])
+    else:
+        labor = {"kategori": "İşçilik", "urun_tip": "Periyodik Bakım", "birim": 1, "fiyat": 0, "toplam": 0}
 
     return {
         "baseParts": base_parts,
