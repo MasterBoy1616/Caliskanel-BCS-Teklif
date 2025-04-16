@@ -52,21 +52,24 @@ def get_parts(brand: str, model: str):
         if not match.empty:
             base_parts.append(parse_row(match.iloc[0]))
 
-    def get_optional(kat1, kat2):
+    def get_optional_parts(parca_kategori, iscilik_anahtar=None):
         parts = []
-        match1 = df[df["KATEGORİ"] == kat1]
-        match2 = df[df["KATEGORİ"] == "İşçilik"]
-        match2 = match2[match2["ÜRÜN/TİP"].str.contains(kat2, na=False)]
-        if not match1.empty:
-            parts.append(parse_row(match1.iloc[0]))
-        if not match2.empty:
-            parts.append(parse_row(match2.iloc[0]))
+        # Parçayı KATEGORİ'den bul
+        match_part = df[df["KATEGORİ"] == parca_kategori]
+        if not match_part.empty:
+            parts.append(parse_row(match_part.iloc[0]))
+        # İşçilik varsa ÜRÜN/TİP içinde ara
+        if iscilik_anahtar:
+            match_iscilik = df[(df["KATEGORİ"] == "İşçilik") & (df["ÜRÜN/TİP"].str.contains(iscilik_anahtar, na=False))]
+            if not match_iscilik.empty:
+                parts.append(parse_row(match_iscilik.iloc[0]))
         return parts
 
     optional = {
-        "buji": get_optional("Buji", "BujiDeğişim"),
-        "balata": get_optional("ÖnFrenBalata", "Balata"),
-        "disk": get_optional("ÖnFrenDisk", "Disk")
+        "buji": get_optional_parts("Buji", "BujiDeğişim"),
+        "balata": get_optional_parts("ÖnFrenBalata", "Balata"),
+        "disk": get_optional_parts("ÖnFrenDisk", "Disk"),
+        "silecek": get_optional_parts("Silecek")
     }
 
     labor_match = df[(df["KATEGORİ"] == "İşçilik") & (df["ÜRÜN/TİP"].str.contains("Periyodik", na=False))]
