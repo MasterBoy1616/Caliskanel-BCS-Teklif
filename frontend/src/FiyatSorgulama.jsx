@@ -34,18 +34,18 @@ const FiyatSorgulama = () => {
   const calculateTotal = () => {
     if (!parts) return 0;
     let total = 0;
-    parts.baseParts.forEach(p => total += p.price);
+    parts.baseParts.forEach(p => total += p.toplam);
     Object.keys(selectedExtras).forEach(key => {
       if (selectedExtras[key]) {
-        parts.optional[key].forEach(p => total += p.price);
+        parts.optional[key].forEach(p => total += p.toplam);
       }
     });
-    total += parts.labor.price;
+    total += parts.labor.toplam;
     return total;
   };
 
   return (
-    <div style={{ padding: 24, maxWidth: 700, margin: "0 auto" }}>
+    <div style={{ padding: 24, maxWidth: 900, margin: "0 auto" }}>
       <h2>Periyodik Bakım Fiyat Sorgulama</h2>
       <div>
         <label>Marka:</label>
@@ -69,35 +69,71 @@ const FiyatSorgulama = () => {
       {parts && (
         <>
           <h3>Parçalar</h3>
-          <ul>
-            {parts.baseParts.map((p) => (
-              <li key={p.name}>{p.name} – {p.price.toLocaleString()} TL</li>
-            ))}
-          </ul>
+          <table border="1" cellPadding="6" style={{ borderCollapse: "collapse", width: "100%" }}>
+            <thead>
+              <tr>
+                <th>Kategori</th>
+                <th>Ürün/TİP</th>
+                <th>Birim</th>
+                <th>Birim Fiyat</th>
+                <th>Toplam</th>
+              </tr>
+            </thead>
+            <tbody>
+              {parts.baseParts.map((p, i) => (
+                <tr key={i}>
+                  <td>{p.kategori}</td>
+                  <td>{p.urun_tip}</td>
+                  <td>{p.birim}</td>
+                  <td>{p.fiyat.toLocaleString()} TL</td>
+                  <td>{p.toplam.toLocaleString()} TL</td>
+                </tr>
+              ))}
+              {Object.entries(parts.optional).map(([key, group]) =>
+                selectedExtras[key]
+                  ? group.map((p, i) => (
+                      <tr key={`${key}-${i}`}>
+                        <td>{p.kategori}</td>
+                        <td>{p.urun_tip}</td>
+                        <td>{p.birim}</td>
+                        <td>{p.fiyat.toLocaleString()} TL</td>
+                        <td>{p.toplam.toLocaleString()} TL</td>
+                      </tr>
+                    ))
+                  : null
+              )}
+              <tr>
+                <td>{parts.labor.kategori}</td>
+                <td>{parts.labor.urun_tip}</td>
+                <td>{parts.labor.birim}</td>
+                <td>{parts.labor.fiyat.toLocaleString()} TL</td>
+                <td>{parts.labor.toplam.toLocaleString()} TL</td>
+              </tr>
+            </tbody>
+          </table>
 
-          <h4>Ekstra</h4>
-          {Object.entries(parts.optional).map(([key, group]) => (
-            <div key={key}>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={selectedExtras[key]}
-                  onChange={() =>
-                    setSelectedExtras((prev) => ({ ...prev, [key]: !prev[key] }))
-                  }
-                />
-                {key.toUpperCase()}
-              </label>
-            </div>
-          ))}
+          <h2 style={{ marginTop: 20 }}>Toplam: {calculateTotal().toLocaleString()} TL</h2>
 
-          <h3>Periyodik Bakım İşçiliği: {parts.labor.price.toLocaleString()} TL</h3>
-          <h2>Toplam: {calculateTotal().toLocaleString()} TL</h2>
-
-          <button onClick={() => alert("Teklif al formu yakında!")}>Teklif Al</button>
-          <button onClick={() => alert("Randevu al formu yakında!")}>Randevu Al</button>
+          <button onClick={() => alert("Teklif formu yakında!")}>Teklif Al</button>
+          <button onClick={() => alert("Randevu formu yakında!")}>Randevu Al</button>
         </>
       )}
+
+      <div style={{ marginTop: 16 }}>
+        <strong>Ekstra Seçenekler:</strong>
+        {["buji", "balata", "disk"].map((opt) => (
+          <label key={opt} style={{ marginLeft: 12 }}>
+            <input
+              type="checkbox"
+              checked={selectedExtras[opt]}
+              onChange={() =>
+                setSelectedExtras((prev) => ({ ...prev, [opt]: !prev[opt] }))
+              }
+            />
+            {opt.toUpperCase()}
+          </label>
+        ))}
+      </div>
     </div>
   );
 };
