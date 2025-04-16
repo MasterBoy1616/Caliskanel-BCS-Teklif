@@ -66,7 +66,7 @@ def get_parts(brand: str, model: str):
     optional = {
         "balata": get_optional_parts("ÖnFrenBalata", "Balata"),
         "disk": get_optional_parts("ÖnFrenDisk", "Disk"),
-        "silecek": get_optional_parts("Silecek")
+        "silecek": get_optional_parts("Silecek")  # sadece parça olacak
     }
 
     labor_match = df[(df["KATEGORİ"] == "İşçilik") & (df["ÜRÜN/TİP"].str.contains("Periyodik", na=False))]
