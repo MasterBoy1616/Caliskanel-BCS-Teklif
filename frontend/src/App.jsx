@@ -1,12 +1,8 @@
 import React from "react";
+import FiyatSorgulama from "./FiyatSorgulama";
 
 function App() {
-  return (
-    <div style={{ padding: 24 }}>
-      <h1>Çalışkanel Servis – Fullstack Sistemi</h1>
-      <p>Marka/model/tip ve parça detayları burada olacak.</p>
-    </div>
-  );
+  return <FiyatSorgulama />;
 }
 
 export default App;
