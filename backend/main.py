@@ -9,8 +9,7 @@ sheets = pd.read_excel(excel_path, sheet_name=None)
 
 def parse_miktar(birim_str):
     try:
-        if pd.isna(birim_str):
-            return 1
+        if pd.isna(birim_str): return 1
         value = str(birim_str).split()[0].replace(",", ".")
         return float(value)
     except:
@@ -46,23 +45,22 @@ def get_parts(brand: str, model: str):
     df = sheets["02_TavsiyeEdilenBakımListesi"]
     df = df[(df["MARKA"] == brand) & (df["MODEL"] == model)]
 
-    # Zorunlu parçalar
-    fixed_keywords = ["MotorYağ", "YağFiltresi", "HavaFiltresi", "PolenFiltre", "YakıtFiltresi"]
+    kategori_listesi = ["MotorYağ", "YağFiltresi", "HavaFiltresi", "PolenFiltre", "YakıtFiltresi"]
     base_parts = []
-    for key in fixed_keywords:
-        part_match = df[(df["KATEGORİ"] != "İşçilik") & (df["ÜRÜN/TİP"].str.contains(key, na=False))]
-        if not part_match.empty:
-            base_parts.append(parse_row(part_match.iloc[0]))
+    for kategori in kategori_listesi:
+        match = df[df["KATEGORİ"] == kategori]
+        if not match.empty:
+            base_parts.append(parse_row(match.iloc[0]))
 
-    # Opsiyonel + işçilik
-    def get_optional(keyword_part, keyword_labor):
+    def get_optional(kat1, kat2):
         parts = []
-        match_part = df[(df["KATEGORİ"] != "İşçilik") & (df["ÜRÜN/TİP"].str.contains(keyword_part, na=False))]
-        match_labor = df[(df["KATEGORİ"] == "İşçilik") & (df["ÜRÜN/TİP"].str.contains(keyword_labor, na=False))]
-        if not match_part.empty:
-            parts.append(parse_row(match_part.iloc[0]))
-        if not match_labor.empty:
-            parts.append(parse_row(match_labor.iloc[0]))
+        match1 = df[df["KATEGORİ"] == kat1]
+        match2 = df[df["KATEGORİ"] == "İşçilik"]
+        match2 = match2[match2["ÜRÜN/TİP"].str.contains(kat2, na=False)]
+        if not match1.empty:
+            parts.append(parse_row(match1.iloc[0]))
+        if not match2.empty:
+            parts.append(parse_row(match2.iloc[0]))
         return parts
 
     optional = {
@@ -71,10 +69,9 @@ def get_parts(brand: str, model: str):
         "disk": get_optional("ÖnFrenDisk", "Disk")
     }
 
-    # Periyodik bakım işçiliği
-    match_labor = df[(df["KATEGORİ"] == "İşçilik") & (df["ÜRÜN/TİP"].str.contains("Periyodik", na=False))]
-    if not match_labor.empty:
-        labor = parse_row(match_labor.iloc[0])
+    labor_match = df[(df["KATEGORİ"] == "İşçilik") & (df["ÜRÜN/TİP"].str.contains("Periyodik", na=False))]
+    if not labor_match.empty:
+        labor = parse_row(labor_match.iloc[0])
     else:
         labor = {"kategori": "İşçilik", "urun_tip": "Periyodik Bakım", "birim": 1, "fiyat": 0, "toplam": 0}
 
