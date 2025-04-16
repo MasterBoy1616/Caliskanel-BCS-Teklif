@@ -16,3 +16,15 @@ def get_brands():
 
 # ✅ En son StaticFiles mount et
 app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
+@app.get("/api/models")
+def get_models(brand: str):
+    df = sheets["02_TavsiyeEdilenBakımListesi"]
+    filtered = df[df["MARKA"] == brand]
+    return sorted(filtered["MODEL"].dropna().unique().tolist())
+
+@app.get("/api/types")
+def get_types(brand: str, model: str):
+    df = sheets["02_TavsiyeEdilenBakımListesi"]
+    filtered = df[(df["MARKA"] == brand) & (df["MODEL"] == model)]
+    return sorted(filtered["ÜRÜN/TİP"].dropna().unique().tolist())
+
