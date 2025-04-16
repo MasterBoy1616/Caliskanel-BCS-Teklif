@@ -10,6 +10,7 @@ app = FastAPI()
 # Frontend'i servis et
 app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
 
+
 # Excel verisi
 excel_path = "backend/yeni_bosch_fiyatlari.xlsm"
 sheets = pd.read_excel(excel_path, sheet_name=None)
