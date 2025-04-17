@@ -1,60 +1,46 @@
+// frontend/src/pdfGenerator.js
+
 import jsPDF from "jspdf";
 
-export async function generatePDF(brand, model, parts) {
+export const generatePdf = (formData, fiyatBilgisi) => {
   const doc = new jsPDF();
 
-  // LOGOLAR
-  const logoCaliskanel = "/logo-caliskanel.png";
-  const logoBosch = "/logo-bosch.png";
-  const carPlaceholder = "/car-placeholder.png";
-
-  // Logo ekleme
-  doc.addImage(logoCaliskanel, "PNG", 10, 10, 40, 20);
-  doc.addImage(logoBosch, "PNG", 160, 10, 40, 20);
-
+  // Şirket bilgileri
   doc.setFontSize(14);
-  doc.text(`Araç Marka: ${brand}`, 14, 40);
-  doc.text(`Araç Model: ${model}`, 14, 48);
-
-  doc.setFontSize(12);
-  doc.text("Parçalar:", 14, 60);
-
-  let startY = 70;
-
-  parts.baseParts.forEach(p => {
-    doc.text(`${p.kategori} - ${p.urun_tip} (${p.birim}) - ${p.fiyat} TL - ${p.toplam} TL`, 14, startY);
-    startY += 8;
-  });
-
-  doc.text(`${parts.labor.kategori} - ${parts.labor.urun_tip} (${parts.labor.birim}) - ${parts.labor.fiyat} TL - ${parts.labor.toplam} TL`, 14, startY);
-  startY += 10;
-
-  const toplamFiyat = parts.baseParts.reduce((acc, p) => acc + p.toplam, 0) + parts.labor.toplam;
-  doc.setFontSize(14);
-  doc.text(`Toplam: ${toplamFiyat} TL (KDV Dahil)`, 14, startY);
-  startY += 10;
-
+  doc.text("Çalışkanel Oto Bosch Car Service", 20, 20);
   doc.setFontSize(10);
-  doc.text("Bu fiyat listesi oluşturulduğu tarihten itibaren 7 gün geçerlidir.", 14, startY);
-  startY += 20;
+  doc.text("Adres: 29 Ekim Mh. İzmir Yolu Cd. No:384 Nilüfer/Bursa", 20, 28);
+  doc.text("Tel: 0224 443 57 88 | Mail: caliskanel@boschservice.com.tr", 20, 34);
+  doc.text("Web: www.caliskanel.com", 20, 40);
 
-  // Araç fotoğrafı
-  try {
-    doc.addImage(carPlaceholder, "PNG", 60, startY, 90, 50);
-  } catch (e) {
-    console.log("Araba fotoğrafı eklenemedi:", e);
-  }
-
-  startY += 60;
-
-  // Şirket Bilgileri
+  // Fiyat Bilgisi
   doc.setFontSize(12);
-  doc.text("Çalışkanel Oto Bosch Car Service", 14, startY);
+  doc.text("Fiyat Teklifi", 20, 55);
   doc.setFontSize(10);
-  doc.text("Adres: 29 Ekim Mh. İzmir Yolu Cd. No:384 Nilüfer Bursa", 14, startY + 6);
-  doc.text("Telefon: 0224 443 57 88", 14, startY + 12);
-  doc.text("Mail: caliskanel@boschservice.com.tr", 14, startY + 18);
-  doc.text("Web: www.caliskanel.com", 14, startY + 24);
+  doc.text(`Toplam Fiyat: ${fiyatBilgisi} TL (KDV Dahil)`, 20, 65);
+  doc.text(`Teklifin Geçerlilik Süresi: 7 Gündür`, 20, 72);
 
-  doc.save("fiyat_teklifi.pdf");
-}
+  // Randevu Bilgileri
+  doc.setFontSize(12);
+  doc.text("Müşteri Bilgileri", 20, 90);
+  doc.setFontSize(10);
+  doc.text(`Ad Soyad: ${formData.adSoyad}`, 20, 100);
+  doc.text(`Telefon: ${formData.telefon}`, 20, 106);
+  doc.text(`Araç Plakası: ${formData.plaka}`, 20, 112);
+  doc.text(`Araç Marka/Model: ${formData.arac}`, 20, 118);
+  doc.text(`Randevu Tarihi: ${formData.randevuTarihi}`, 20, 124);
+
+  // Araç fotoğrafı veya yedek logo
+  const logoUrl = "/logo-bosch.png"; // Buraya örnek logoyu ekliyoruz
+  const img = new Image();
+  img.src = logoUrl;
+  img.onload = () => {
+    doc.addImage(img, "PNG", 140, 10, 50, 20);
+    doc.save("teklif.pdf");
+  };
+
+  // Eğer fotoğraf yüklenmezse yine de PDF kaydedilsin
+  setTimeout(() => {
+    doc.save("teklif.pdf");
+  }, 1000);
+};
