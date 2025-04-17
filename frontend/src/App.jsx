@@ -1,6 +1,22 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import './App.css';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import AdminPanel from "./Admin";
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<div>🌟 Ana Sayfa Burada (Fiyat Sorgulama)</div>} />
+        <Route path="/admin" element={<AdminPanel />} />
+      </Routes>
+    </Router>
+  );
+}
+
+export default App;
+
 
 const App = () => {
   const [brands, setBrands] = useState([]);
