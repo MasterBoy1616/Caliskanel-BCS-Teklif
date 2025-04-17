@@ -1,80 +1,37 @@
-// frontend/src/Randevu.jsx
-
 import React, { useState } from "react";
 import { generatePdf } from "./pdfGenerator";
 
-const Randevu = () => {
+const Randevu = ({ fiyatBilgisi, parts, optionalParts }) => {
   const [formData, setFormData] = useState({
     adSoyad: "",
     telefon: "",
     plaka: "",
     arac: "",
-    randevuTarihi: "",
+    randevuTarihi: ""
   });
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    generatePdf(formData, "12345"); // Buradaki 12345 fiyatı, dinamik de yapılabilir.
+    generatePdf(formData, fiyatBilgisi, parts, optionalParts);
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen">
       <h1 className="text-3xl font-bold mb-6">Randevu Al</h1>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full max-w-md">
-        <input
-          type="text"
-          name="adSoyad"
-          value={formData.adSoyad}
-          onChange={handleChange}
-          placeholder="Ad Soyad"
-          className="p-2 border rounded"
-          required
-        />
-        <input
-          type="text"
-          name="telefon"
-          value={formData.telefon}
-          onChange={handleChange}
-          placeholder="Telefon"
-          className="p-2 border rounded"
-          required
-        />
-        <input
-          type="text"
-          name="plaka"
-          value={formData.plaka}
-          onChange={handleChange}
-          placeholder="Araç Plakası"
-          className="p-2 border rounded"
-          required
-        />
-        <input
-          type="text"
-          name="arac"
-          value={formData.arac}
-          onChange={handleChange}
-          placeholder="Araç Marka / Model"
-          className="p-2 border rounded"
-          required
-        />
-        <input
-          type="datetime-local"
-          name="randevuTarihi"
-          value={formData.randevuTarihi}
-          onChange={handleChange}
-          className="p-2 border rounded"
-          required
-        />
-        <button
-          type="submit"
-          className="bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
-        >
-          PDF Olarak İndir
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-80">
+        <input type="text" name="adSoyad" placeholder="Ad Soyad" onChange={handleChange} required className="p-2 border" />
+        <input type="tel" name="telefon" placeholder="Telefon" onChange={handleChange} required className="p-2 border" />
+        <input type="text" name="plaka" placeholder="Araç Plakası" onChange={handleChange} required className="p-2 border" />
+        <input type="text" name="arac" placeholder="Araç Marka/Model" onChange={handleChange} required className="p-2 border" />
+        <input type="datetime-local" name="randevuTarihi" onChange={handleChange} required className="p-2 border" />
+        
+        <button type="submit" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 rounded">
+          📄 Teklifi PDF Olarak Al
         </button>
       </form>
     </div>
