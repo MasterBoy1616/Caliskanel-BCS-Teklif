@@ -1,98 +1,105 @@
+// frontend/src/Admin.jsx
+
 import React, { useEffect, useState } from "react";
-import * as XLSX from "xlsx";
+import axios from "axios";
 
 const AdminPanel = () => {
-  const [submissions, setSubmissions] = useState([]);
-  const [filtered, setFiltered] = useState([]);
-  const [filter, setFilter] = useState("hepsi");
-  const [expanded, setExpanded] = useState(null);
-  const [notes, setNotes] = useState({});
-  const [readStatus, setReadStatus] = useState({});
+  const [brands, setBrands] = useState([]);
+  const [models, setModels] = useState([]);
+  const [selectedBrand, setSelectedBrand] = useState("");
+  const [selectedModel, setSelectedModel] = useState("");
+  const [parts, setParts] = useState(null);
 
   useEffect(() => {
-    fetch("/api/submissions")
-      .then(res => res.json())
-      .then(data => {
-        const sorted = data.sort((a, b) => b.file.localeCompare(a.file));
-        setSubmissions(sorted);
-        setFiltered(sorted);
-      });
+    axios.get("/api/brands").then((res) => setBrands(res.data));
   }, []);
 
   useEffect(() => {
-    if (filter === "hepsi") setFiltered(submissions);
-    else if (filter === "teklif") setFiltered(submissions.filter(s => s.file.startsWith("teklif")));
-    else if (filter === "randevu") setFiltered(submissions.filter(s => s.file.startsWith("randevu")));
-  }, [filter, submissions]);
+    if (selectedBrand) {
+      axios.get(`/api/models?brand=${selectedBrand}`).then((res) => setModels(res.data));
+    }
+  }, [selectedBrand]);
 
-  const exportToExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(filtered);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Basvurular");
-    XLSX.writeFile(wb, "basvurular.xlsx");
-  };
+  useEffect(() => {
+    if (selectedBrand && selectedModel) {
+      axios.get(`/api/parts?brand=${selectedBrand}&model=${selectedModel}`)
+        .then((res) => setParts(res.data));
+    }
+  }, [selectedBrand, selectedModel]);
 
-  const handleDelete = (filename) => {
-    const updated = submissions.filter(s => s.file !== filename);
-    setSubmissions(updated);
-    setFiltered(updated);
-    alert(`🗑️ ${filename} silindi (not simulated)`);
+  const calculateTotal = () => {
+    if (!parts) return 0;
+    let total = 0;
+    parts.baseParts.forEach(p => total += p.toplam);
+    Object.keys(parts.optional).forEach(key => {
+      parts.optional[key].forEach(p => total += p.toplam);
+    });
+    total += parts.labor.toplam;
+    return total;
   };
 
   return (
-    <div style={{ padding: "20px", maxWidth: "1000px", margin: "0 auto" }}>
-      <h2 style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "20px" }}>📥 Gelen Başvurular</h2>
+    <div className="p-6 max-w-5xl mx-auto">
+      <h2 className="text-2xl font-bold mb-4">Admin Panel - Fiyat Takibi</h2>
 
-      <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
-        <button onClick={() => setFilter("hepsi")}>Tümü</button>
-        <button onClick={() => setFilter("teklif")}>Teklifler</button>
-        <button onClick={() => setFilter("randevu")}>Randevular</button>
-        <button onClick={exportToExcel} style={{ marginLeft: "auto" }}>Excel'e Aktar</button>
+      <div className="flex gap-4 mb-6">
+        <select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)} className="border p-2 rounded">
+          <option value="">Marka Seç</option>
+          {brands.map((b, i) => <option key={i} value={b}>{b}</option>)}
+        </select>
+
+        <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} className="border p-2 rounded" disabled={!selectedBrand}>
+          <option value="">Model Seç</option>
+          {models.map((m, i) => <option key={i} value={m}>{m}</option>)}
+        </select>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-        {filtered.map((entry, i) => (
-          <div key={i} style={{
-            border: "1px solid #ccc",
-            borderRadius: "8px",
-            padding: "15px",
-            backgroundColor: readStatus[entry.file] ? "#f5f5f5" : "#ffffff",
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <p><strong>İsim:</strong> {entry.name}</p>
-              {!readStatus[entry.file] && <span style={{ color: "green", fontSize: "12px" }}>🟢 Yeni</span>}
-            </div>
-            <p><strong>Telefon:</strong> {entry.phone}</p>
-            <p><strong>Marka / Model / Tip:</strong> {entry.brand} / {entry.model} / {entry.type}</p>
-            <p><strong>Fiyat:</strong> {entry.price ? `${entry.price} TL` : "-"}</p>
-            {entry.date && <p><strong>Randevu Tarihi:</strong> {entry.date}</p>}
-            <p style={{ fontSize: "12px", color: "#888" }}>Dosya: {entry.file}</p>
+      {parts && (
+        <div className="overflow-x-auto">
+          <table className="min-w-full table-auto border">
+            <thead>
+              <tr className="bg-gray-200">
+                <th className="p-2 border">Kategori</th>
+                <th className="p-2 border">Ürün/TİP</th>
+                <th className="p-2 border">Birim</th>
+                <th className="p-2 border">Fiyat</th>
+                <th className="p-2 border">Toplam</th>
+              </tr>
+            </thead>
+            <tbody>
+              {parts.baseParts.map((p, i) => (
+                <tr key={i}>
+                  <td className="p-2 border">{p.kategori}</td>
+                  <td className="p-2 border">{p.urun_tip}</td>
+                  <td className="p-2 border">{p.birim}</td>
+                  <td className="p-2 border">{p.fiyat} TL</td>
+                  <td className="p-2 border">{p.toplam} TL</td>
+                </tr>
+              ))}
+              {Object.entries(parts.optional).map(([key, items]) =>
+                items.map((p, i) => (
+                  <tr key={`${key}-${i}`}>
+                    <td className="p-2 border">{p.kategori}</td>
+                    <td className="p-2 border">{p.urun_tip}</td>
+                    <td className="p-2 border">{p.birim}</td>
+                    <td className="p-2 border">{p.fiyat} TL</td>
+                    <td className="p-2 border">{p.toplam} TL</td>
+                  </tr>
+                ))
+              )}
+              <tr className="font-semibold">
+                <td className="p-2 border">{parts.labor.kategori}</td>
+                <td className="p-2 border">{parts.labor.urun_tip}</td>
+                <td className="p-2 border">{parts.labor.birim}</td>
+                <td className="p-2 border">{parts.labor.fiyat} TL</td>
+                <td className="p-2 border">{parts.labor.toplam} TL</td>
+              </tr>
+            </tbody>
+          </table>
 
-            <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
-              <button onClick={() => {
-                setExpanded(expanded === i ? null : i);
-                setReadStatus(prev => ({ ...prev, [entry.file]: true }));
-              }}>
-                {expanded === i ? "Detayı Gizle" : "Detayı Gör"}
-              </button>
-              <button style={{ backgroundColor: "red", color: "white" }} onClick={() => handleDelete(entry.file)}>Sil</button>
-            </div>
-
-            {expanded === i && (
-              <div style={{ marginTop: "10px", backgroundColor: "#f9f9f9", padding: "10px", borderRadius: "6px" }}>
-                <pre style={{ fontSize: "12px" }}>{JSON.stringify(entry, null, 2)}</pre>
-                <input
-                  type="text"
-                  placeholder="Not ekle..."
-                  style={{ width: "100%", marginTop: "8px", padding: "8px" }}
-                  value={notes[entry.file] || ""}
-                  onChange={e => setNotes(prev => ({ ...prev, [entry.file]: e.target.value }))}
-                />
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+          <h3 className="mt-6 text-lg font-bold">Toplam: {calculateTotal()} TL</h3>
+        </div>
+      )}
     </div>
   );
 };
