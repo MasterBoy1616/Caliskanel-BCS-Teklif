@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import pandas as pd
 
 app = FastAPI()
@@ -81,4 +82,10 @@ def get_parts(brand: str, model: str):
         "labor": labor
     }
 
-app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
+# Statik dosyalar (vite'dan oluşan build) yayınlanıyor:
+app.mount("/static", StaticFiles(directory="frontend/dist/static"), name="static")
+
+# Ana frontend (SPA) yönlendirmesi yapılıyor:
+@app.get("/{full_path:path}")
+async def serve_spa(full_path: str):
+    return FileResponse("frontend/dist/index.html")
