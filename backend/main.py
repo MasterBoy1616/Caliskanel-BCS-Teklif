@@ -82,10 +82,10 @@ def get_parts(brand: str, model: str):
         "labor": labor
     }
 
-# Statik dosyalar (vite'dan oluşan build) yayınlanıyor:
-app.mount("/static", StaticFiles(directory="frontend/dist/static"), name="static")
+# Frontend build dosyalarını frontend/dist dizininden yayınla
+app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
 
-# Ana frontend (SPA) yönlendirmesi yapılıyor:
+# SPA yönlendirmesi: bütün yolları index.html'e yönlendir
 @app.get("/{full_path:path}")
 async def serve_spa(full_path: str):
     return FileResponse("frontend/dist/index.html")
