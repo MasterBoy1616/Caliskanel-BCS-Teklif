@@ -8,19 +8,18 @@ from datetime import datetime
 
 app = FastAPI()
 
-# Excel dosyası
+# Dosya yolları
 excel_path = "backend/yeni_bosch_fiyatlari.xlsm"
-sheets = pd.read_excel(excel_path, sheet_name=None)
-
-# Log dosyası path'leri
 FIYAT_LOG_PATH = "backend/logs/fiyat_bakma_logu.json"
 RANDEVU_LOG_PATH = "backend/logs/randevu_logu.json"
-GUNCEL_FIYAT_PATH = "backend/logs/guncel_fiyatlar.json"
+GUNCEL_FIYATLAR_PATH = "backend/logs/guncel_fiyatlar.json"
+
+# Excel veri yüklemesi
+sheets = pd.read_excel(excel_path, sheet_name=None)
 
 def parse_miktar(birim_str):
     try:
-        if pd.isna(birim_str):
-            return 1
+        if pd.isna(birim_str): return 1
         value = str(birim_str).split()[0].replace(",", ".")
         return float(value)
     except:
@@ -92,68 +91,28 @@ def get_parts(brand: str, model: str):
         "labor": labor
     }
 
-# Log sistemleri
-
-@app.get("/api/log/fiyatbakmasayisi")
-def get_fiyat_bakma_sayisi():
-    if os.path.exists(FIYAT_LOG_PATH):
-        with open(FIYAT_LOG_PATH, "r") as f:
-            logs = json.load(f)
-            return {"adet": len(logs)}
-    return {"adet": 0}
-
-@app.get("/api/log/randevusayisi")
-def get_randevu_sayisi():
+@app.post("/api/randevu")
+async def create_randevu(request: Request):
+    data = await request.json()
+    os.makedirs(os.path.dirname(RANDEVU_LOG_PATH), exist_ok=True)
     if os.path.exists(RANDEVU_LOG_PATH):
-        with open(RANDEVU_LOG_PATH, "r") as f:
+        with open(RANDEVU_LOG_PATH, "r", encoding="utf-8") as f:
             logs = json.load(f)
-            return {"adet": len(logs)}
-    return {"adet": 0}
+    else:
+        logs = []
 
-# Randevu yönetimi
+    logs.append(data)
 
-@app.get("/api/randevular")
-def get_randevular():
-    if os.path.exists(RANDEVU_LOG_PATH):
-        with open(RANDEVU_LOG_PATH, "r") as f:
-            randevular = json.load(f)
-            randevular.sort(key=lambda x: x.get("randevuTarihi", ""), reverse=True)
-            return randevular
-    return []
+    with open(RANDEVU_LOG_PATH, "w", encoding="utf-8") as f:
+        json.dump(logs, f, ensure_ascii=False, indent=2)
 
-@app.patch("/api/randevular/update")
-async def update_randevu(index: int = Body(...), durum: str = Body(...)):
-    if os.path.exists(RANDEVU_LOG_PATH):
-        with open(RANDEVU_LOG_PATH, "r+") as f:
-            logs = json.load(f)
-            if 0 <= index < len(logs):
-                logs[index]["durum"] = durum
-                f.seek(0)
-                json.dump(logs, f, indent=2, ensure_ascii=False)
-                f.truncate()
-                return {"success": True}
-    return {"success": False}
-
-@app.delete("/api/randevular/delete")
-async def delete_randevu(index: int = Body(...)):
-    if os.path.exists(RANDEVU_LOG_PATH):
-        with open(RANDEVU_LOG_PATH, "r+") as f:
-            logs = json.load(f)
-            if 0 <= index < len(logs):
-                logs.pop(index)
-                f.seek(0)
-                json.dump(logs, f, indent=2, ensure_ascii=False)
-                f.truncate()
-                return {"success": True}
-    return {"success": False}
-
-# Fiyat güncelleme yönetimi
+    return {"success": True, "message": "Randevu kaydedildi"}
 
 @app.post("/api/save-prices")
 async def save_prices(request: Request):
     data = await request.json()
-    os.makedirs(os.path.dirname(GUNCEL_FIYAT_PATH), exist_ok=True)
-    with open(GUNCEL_FIYAT_PATH, "w", encoding="utf-8") as f:
+    os.makedirs(os.path.dirname(GUNCEL_FIYATLAR_PATH), exist_ok=True)
+    with open(GUNCEL_FIYATLAR_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
     return {"success": True, "message": "Fiyatlar kaydedildi"}
 
@@ -163,17 +122,3 @@ app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
 @app.get("/{full_path:path}")
 async def serve_spa(full_path: str):
     return FileResponse("frontend/dist/index.html")
-@app.post("/api/randevular/ekle")
-async def add_randevu(request: Request):
-    new_randevu = await request.json()
-    if not os.path.exists(RANDEVU_LOG_PATH):
-        with open(RANDEVU_LOG_PATH, "w") as f:
-            json.dump([], f)
-
-    with open(RANDEVU_LOG_PATH, "r+") as f:
-        logs = json.load(f)
-        logs.append(new_randevu)
-        f.seek(0)
-        json.dump(logs, f, indent=2, ensure_ascii=False)
-        f.truncate()
-    return {"success": True}
