@@ -8,14 +8,13 @@ from datetime import datetime
 
 app = FastAPI()
 
-# Dosya yolları
+# Excel dosyası
 excel_path = "backend/yeni_bosch_fiyatlari.xlsm"
+sheets = pd.read_excel(excel_path, sheet_name=None)
+
+# Log dosyası path'leri
 FIYAT_LOG_PATH = "backend/logs/fiyat_bakma_logu.json"
 RANDEVU_LOG_PATH = "backend/logs/randevu_logu.json"
-GUNCEL_FIYATLAR_PATH = "backend/logs/guncel_fiyatlar.json"
-
-# Excel veri yüklemesi
-sheets = pd.read_excel(excel_path, sheet_name=None)
 
 def parse_miktar(birim_str):
     try:
@@ -91,33 +90,41 @@ def get_parts(brand: str, model: str):
         "labor": labor
     }
 
+@app.get("/api/log/fiyatbakmasayisi")
+def get_fiyat_bakma_sayisi():
+    if os.path.exists(FIYAT_LOG_PATH):
+        with open(FIYAT_LOG_PATH, "r") as f:
+            logs = json.load(f)
+            return {"adet": len(logs)}
+    return {"adet": 0}
+
+@app.get("/api/log/randevusayisi")
+def get_randevu_sayisi():
+    if os.path.exists(RANDEVU_LOG_PATH):
+        with open(RANDEVU_LOG_PATH, "r") as f:
+            logs = json.load(f)
+            return {"adet": len(logs)}
+    return {"adet": 0}
+
 @app.post("/api/randevu")
 async def create_randevu(request: Request):
-    data = await request.json()
-    os.makedirs(os.path.dirname(RANDEVU_LOG_PATH), exist_ok=True)
-    if os.path.exists(RANDEVU_LOG_PATH):
-        with open(RANDEVU_LOG_PATH, "r", encoding="utf-8") as f:
-            logs = json.load(f)
-    else:
-        logs = []
+    form = await request.json()
+    if not os.path.exists("backend/logs"):
+        os.makedirs("backend/logs")
+    if not os.path.exists(RANDEVU_LOG_PATH):
+        with open(RANDEVU_LOG_PATH, "w", encoding="utf-8") as f:
+            json.dump([], f)
 
-    logs.append(data)
+    with open(RANDEVU_LOG_PATH, "r+", encoding="utf-8") as f:
+        logs = json.load(f)
+        logs.append(form)
+        f.seek(0)
+        json.dump(logs, f, indent=2, ensure_ascii=False)
+        f.truncate()
 
-    with open(RANDEVU_LOG_PATH, "w", encoding="utf-8") as f:
-        json.dump(logs, f, ensure_ascii=False, indent=2)
+    return {"success": True}
 
-    return {"success": True, "message": "Randevu kaydedildi"}
-
-@app.post("/api/save-prices")
-async def save_prices(request: Request):
-    data = await request.json()
-    os.makedirs(os.path.dirname(GUNCEL_FIYATLAR_PATH), exist_ok=True)
-    with open(GUNCEL_FIYATLAR_PATH, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    return {"success": True, "message": "Fiyatlar kaydedildi"}
-
-# Frontend yayınlama
-app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
+@app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
 
 @app.get("/{full_path:path}")
 async def serve_spa(full_path: str):
