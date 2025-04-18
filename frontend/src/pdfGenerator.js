@@ -1,58 +1,33 @@
-// frontend/src/pdfGenerator.js
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
+import logoBosch from "../logo-bosch.png";
+import logoCaliskanel from "../logo-caliskanel.png";
 
-export const generatePdf = (formData, toplamFiyat, baseParts, optionalParts, labor) => {
+export const generatePdf = (formData, parts, selectedExtras) => {
   const doc = new jsPDF();
 
-  // Logo eklemek için
-  const boschLogo = "/logo-bosch.png"; // Public dizinde olacak
-  const caliskanelLogo = "/logo-caliskanel.png"; // Public dizinde olacak
+  const totalPrice = parts.baseParts.reduce((sum, p) => sum + p.toplam, 0) +
+    Object.keys(selectedExtras).reduce((sum, key) => selectedExtras[key] ? parts.optional[key]?.reduce((s, p) => s + p.toplam, 0) || 0 : sum, 0) +
+    parts.labor.toplam;
 
-  // Bosch logosu
-  doc.addImage(boschLogo, "PNG", 14, 10, 40, 20);
-  // Çalışkanel logosu
-  doc.addImage(caliskanelLogo, "PNG", 150, 10, 40, 20);
+  doc.addImage(logoBosch, "PNG", 10, 10, 40, 20);
+  doc.addImage(logoCaliskanel, "PNG", 160, 10, 40, 20);
 
-  doc.setFont("helvetica", "normal");
   doc.setFontSize(18);
-  doc.text("Periyodik Bakım Teklifi", 105, 40, { align: "center" });
+  doc.text("Teklif Bilgileri", 105, 40, { align: "center" });
 
-  doc.setFontSize(12);
-  doc.text(`Ad Soyad: ${formData.adSoyad}`, 14, 60);
-  doc.text(`Telefon: ${formData.telefon}`, 14, 68);
-  doc.text(`Plaka: ${formData.plaka}`, 14, 76);
-  doc.text(`Araç: ${formData.arac}`, 14, 84);
-  doc.text(`Randevu Tarihi: ${formData.randevuTarihi.replace("T", " ")}`, 14, 92);
-
-  const allParts = [
-    ...baseParts.map(p => [p.kategori, p.urun_tip, p.birim, `${p.fiyat} TL`, `${p.toplam} TL`]),
-    ...optionalParts.map(p => [p.kategori, p.urun_tip, p.birim, `${p.fiyat} TL`, `${p.toplam} TL`]),
-    [labor.kategori, labor.urun_tip, labor.birim, `${labor.fiyat} TL`, `${labor.toplam} TL`]
-  ];
-
-  doc.autoTable({
-    head: [["Kategori", "Ürün", "Birim", "Birim Fiyat", "Toplam"]],
-    body: allParts,
-    startY: 100,
-    styles: {
-      font: "helvetica",
-      fontStyle: "normal",
-      fontSize: 10,
-      cellPadding: 3,
-      overflow: "linebreak",
-    },
-    headStyles: {
-      fillColor: [41, 128, 185],
-      textColor: 255,
-    },
-    alternateRowStyles: {
-      fillColor: [240, 240, 240],
-    },
+  autoTable(doc, {
+    startY: 50,
+    head: [["Kategori", "Ürün", "Birim", "Fiyat", "Toplam"]],
+    body: [
+      ...parts.baseParts.map(p => [p.kategori, p.urun_tip, p.birim, p.fiyat, p.toplam]),
+      ...Object.keys(selectedExtras).flatMap(opt => selectedExtras[opt] ? parts.optional[opt]?.map(p => [p.kategori, p.urun_tip, p.birim, p.fiyat, p.toplam]) : []),
+      [parts.labor.kategori, parts.labor.urun_tip, parts.labor.birim, parts.labor.fiyat, parts.labor.toplam]
+    ]
   });
 
   doc.setFontSize(14);
-  doc.text(`Toplam: ${toplamFiyat} TL (KDV Dahil)`, 14, doc.lastAutoTable.finalY + 10);
+  doc.text(`Toplam Fiyat: ${totalPrice} TL (KDV Dahil)`, 14, doc.previousAutoTable.finalY + 20);
 
-  doc.save(`teklif_${formData.plaka || "arac"}.pdf`);
+  doc.save(`Teklif_${formData.plaka || "PlakaYok"}.pdf`);
 };
