@@ -1,91 +1,67 @@
-// frontend/src/pdfGenerator.js
-
 import jsPDF from "jspdf";
 import "jspdf-autotable";
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 
-export const generatePdf = (formData, fiyatBilgisi, parts = [], optionalParts = []) => {
+export const generatePdf = (formData, fiyatBilgisi, parts, optionalParts) => {
   const doc = new jsPDF();
-  export const exportToPDF = async (elementId, filename = "teklif.pdf") => {
-  const input = document.getElementById(elementId);
-  if (!input) return;
 
-  // Logolar (kendi projenin public klasöründen alınacak)
-  const boschLogo = "/logo-bosch.png";
-  const caliskanelLogo = "/logo-caliskanel.png";
-  const canvas = await html2canvas(input, { scale: 2 });
-  const imgData = canvas.toDataURL('image/png');
-
-  const pdf = new jsPDF('p', 'mm', 'a4');
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = (canvas.height * pageWidth) / canvas.width;
-
-  pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
-  pdf.save(filename);
-};
-    
-  // Başlık ve İletişim
-  doc.addImage(boschLogo, "PNG", 10, 10, 30, 15);
-  doc.addImage(caliskanelLogo, "PNG", 165, 10, 30, 15);
-
+  // Başlık
   doc.setFontSize(18);
-  doc.text("Çalışkanel Oto Bosch Car Service", 105, 35, { align: "center" });
+  doc.text("Çalışkanel Servis - Teklif Formu", 20, 20);
 
+  // Müşteri Bilgileri
   doc.setFontSize(12);
-  doc.text(`Adres: 29 Ekim Mh. İzmir Yolu Cd. No:384 Nilüfer Bursa`, 10, 50);
-  doc.text(`Tel: 0224 443 57 88 - Mail: caliskanel@boschservice.com.tr`, 10, 57);
-  doc.text(`Web: www.caliskanel.com`, 10, 64);
+  doc.text(`Ad Soyad: ${formData.adSoyad}`, 20, 40);
+  doc.text(`Telefon: ${formData.telefon}`, 20, 50);
+  doc.text(`Plaka: ${formData.plaka}`, 20, 60);
+  doc.text(`Araç: ${formData.arac}`, 20, 70);
+  doc.text(`Randevu Tarihi: ${formData.randevuTarihi}`, 20, 80);
 
-  doc.line(10, 70, 200, 70);
-
-  // Araç Sahibi Bilgileri
+  // Parça Listesi Başlık
   doc.setFontSize(14);
-  doc.text("Araç Sahibi Bilgileri", 10, 80);
+  doc.text("Periyodik Bakım Parçaları", 20, 95);
 
-  const randevuInfo = [
-    ["Ad Soyad:", formData.adSoyad],
-    ["Telefon:", formData.telefon],
-    ["Araç Plakası:", formData.plaka],
-    ["Araç Marka/Model:", formData.arac],
-    ["Randevu Tarihi:", formData.randevuTarihi.replace("T", " ")],
-  ];
-
-  randevuInfo.forEach(([label, value], index) => {
-    doc.setFontSize(12);
-    doc.text(`${label} ${value}`, 10, 90 + index * 7);
-  });
-
-  doc.line(10, 130, 200, 130);
-
-  // Bakım Parçaları Tablosu
-  doc.setFontSize(14);
-  doc.text("Bakım Parçaları", 10, 140);
-
-  const parcalar = [
-    ["Kategori", "Ürün", "Birim", "Fiyat (TL)", "Toplam (TL)"],
-    ...parts.map(p => [p.kategori, p.urun_tip, p.birim, `${p.fiyat}`, `${p.toplam}`]),
-    ...optionalParts.map(p => [p.kategori, p.urun_tip, p.birim, `${p.fiyat}`, `${p.toplam}`])
-  ];
+  // Parça Tablosu
+  const partRows = parts.map((p) => [
+    p.kategori,
+    p.urun_tip,
+    p.birim,
+    `${p.fiyat} TL`,
+    `${p.toplam} TL`
+  ]);
 
   doc.autoTable({
-    startY: 145,
-    head: [parcalar[0]],
-    body: parcalar.slice(1),
-    styles: { fontSize: 10 },
+    head: [["Kategori", "Ürün", "Birim", "Fiyat", "Toplam"]],
+    body: partRows,
+    startY: 100,
   });
 
-  const finalY = doc.lastAutoTable.finalY + 10;
+  // Eğer opsiyonel parçalar varsa onları da ekle
+  if (optionalParts.length > 0) {
+    const optStartY = doc.previousAutoTable.finalY + 10;
 
-  doc.setFontSize(14);
-  doc.text(`Toplam Tutar: ${fiyatBilgisi} TL (KDV Dahil)`, 10, finalY);
+    doc.setFontSize(14);
+    doc.text("Ekstra Parçalar", 20, optStartY);
 
-  doc.setFontSize(10);
-  doc.text("Bu fiyat sadece 7 gün geçerlidir.", 10, finalY + 7);
+    const optionalRows = optionalParts.map((p) => [
+      p.kategori,
+      p.urun_tip,
+      p.birim,
+      `${p.fiyat} TL`,
+      `${p.toplam} TL`
+    ]);
 
-  // Araç görseli
-  const vehicleImage = "/yedek-arac.png"; 
-  doc.addImage(vehicleImage, "PNG", 70, finalY + 15, 70, 40);
+    doc.autoTable({
+      head: [["Kategori", "Ürün", "Birim", "Fiyat", "Toplam"]],
+      body: optionalRows,
+      startY: optStartY + 5,
+    });
+  }
 
-  doc.save("randevu_teklifi.pdf");
+  // Toplam Fiyat
+  const totalY = doc.previousAutoTable.finalY + 10;
+  doc.setFontSize(16);
+  doc.text(`Toplam Fiyat (KDV Dahil): ${fiyatBilgisi} TL`, 20, totalY);
+
+  // PDF'i kaydet
+  doc.save(`teklif_${formData.plaka || "randevu"}.pdf`);
 };
