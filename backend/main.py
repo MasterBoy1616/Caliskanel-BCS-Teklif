@@ -163,3 +163,17 @@ app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
 @app.get("/{full_path:path}")
 async def serve_spa(full_path: str):
     return FileResponse("frontend/dist/index.html")
+@app.post("/api/randevular/ekle")
+async def add_randevu(request: Request):
+    new_randevu = await request.json()
+    if not os.path.exists(RANDEVU_LOG_PATH):
+        with open(RANDEVU_LOG_PATH, "w") as f:
+            json.dump([], f)
+
+    with open(RANDEVU_LOG_PATH, "r+") as f:
+        logs = json.load(f)
+        logs.append(new_randevu)
+        f.seek(0)
+        json.dump(logs, f, indent=2, ensure_ascii=False)
+        f.truncate()
+    return {"success": True}
