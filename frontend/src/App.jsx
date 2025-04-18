@@ -4,6 +4,13 @@ import Home from "./Home";
 import AdminPanel from "./AdminPanel";
 import Login from "./Login";
 
+useEffect(() => {
+  const loggedIn = localStorage.getItem("isLoggedIn");
+  if (loggedIn === "true") {
+    setIsLoggedIn(true);
+  }
+}, []);
+
 const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
