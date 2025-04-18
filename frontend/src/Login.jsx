@@ -1,25 +1,27 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const Login = () => {
+const Login = ({ setIsLoggedIn }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = (e) => {
     e.preventDefault();
     if (username === "admin" && password === "wq27t9mf") {
       localStorage.setItem("isLoggedIn", "true");
+      setIsLoggedIn(true);
       navigate("/admin");
     } else {
-      setError("Hatalı kullanıcı adı veya şifre!");
+      setError(true);
+      setTimeout(() => setError(false), 1000); // kısa bir animasyon efekti
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#e3f2fd" }}>
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+      <div className={`bg-white p-8 rounded-lg shadow-lg w-full max-w-md transition-all duration-300 ${error ? 'animate-shake' : ''}`}>
         <div className="flex justify-center mb-6">
           <img src="/logo-bosch.png" alt="Bosch Logo" className="h-16" />
         </div>
@@ -30,7 +32,7 @@ const Login = () => {
             placeholder="Kullanıcı Adı"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="p-2 border rounded"
+            className="p-2 border rounded focus:ring-2 focus:ring-blue-600"
             required
           />
           <input
@@ -38,13 +40,17 @@ const Login = () => {
             placeholder="Şifre"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="p-2 border rounded"
+            className="p-2 border rounded focus:ring-2 focus:ring-blue-600"
             required
           />
-          {error && <p className="text-red-500 text-center">{error}</p>}
+          {error && (
+            <p className="text-center text-red-500 font-semibold">
+              ⚡ Hatalı kullanıcı adı veya şifre!
+            </p>
+          )}
           <button
             type="submit"
-            className="bg-blue-700 hover:bg-blue-800 text-white p-2 rounded"
+            className="bg-blue-700 hover:bg-blue-800 transition-all duration-200 text-white font-bold py-2 rounded"
           >
             Giriş Yap
           </button>
