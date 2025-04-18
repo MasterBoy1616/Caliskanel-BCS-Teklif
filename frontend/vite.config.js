@@ -1,21 +1,16 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig(({ mode }) => ({
+export default defineConfig({
   plugins: [react()],
-  base: "/", // bu kalacak zaten doğru
-  root: './',
-  server: mode === "development" ? {
+  base: "/",  // Bu satır çok önemli! CSS ve JS için
+  server: {
     proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        secure: false,
-      },
+      '/api': 'http://localhost:8000', 
     }
-  } : undefined,
+  },
   build: {
     outDir: 'dist',
     emptyOutDir: true,
   },
-}));
+});
