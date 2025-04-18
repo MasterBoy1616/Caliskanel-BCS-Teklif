@@ -75,10 +75,17 @@ const AdminPanel = () => {
     });
   };
 
-  const handleSave = () => {
-    setMessage("Fiyatlar Güncellendi ✅");
-    setTimeout(() => setMessage(""), 3000);
-  };
+const handleSave = async () => {
+  try {
+    await axios.post("/api/save-prices", parts);
+    setMessage("Fiyatlar başarıyla kaydedildi ✅");
+  } catch (error) {
+    console.error(error);
+    setMessage("Fiyat kaydederken hata oluştu ❌");
+  }
+  setTimeout(() => setMessage(""), 3000);
+};
+
 
   const calculateTotal = () => {
     if (!parts) return 0;
