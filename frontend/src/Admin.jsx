@@ -2,6 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+const [fiyatBakmaCount, setFiyatBakmaCount] = useState(0);
+const [randevuCount, setRandevuCount] = useState(0);
+
 
 const AdminPanel = () => {
   const [brands, setBrands] = useState([]);
@@ -26,6 +29,11 @@ const AdminPanel = () => {
         .then((res) => setParts(res.data));
     }
   }, [selectedBrand, selectedModel]);
+useEffect(() => {
+  axios.get("/api/brands").then((res) => setBrands(res.data));
+  axios.get("/api/log/fiyatbakmasayisi").then((res) => setFiyatBakmaCount(res.data.adet));
+  axios.get("/api/log/randevusayisi").then((res) => setRandevuCount(res.data.adet));
+}, []);
 
   const calculateTotal = () => {
     if (!parts) return 0;
@@ -53,6 +61,16 @@ const AdminPanel = () => {
           {models.map((m, i) => <option key={i} value={m}>{m}</option>)}
         </select>
       </div>
+<div className="flex gap-8 mb-6">
+  <div className="bg-blue-100 p-4 rounded shadow text-center">
+    <h3 className="text-lg font-bold">Fiyat Sorgulama</h3>
+    <p className="text-2xl">{fiyatBakmaCount}</p>
+  </div>
+  <div className="bg-green-100 p-4 rounded shadow text-center">
+    <h3 className="text-lg font-bold">Randevu Alımı</h3>
+    <p className="text-2xl">{randevuCount}</p>
+  </div>
+</div>
 
       {parts && (
         <div className="overflow-x-auto">
