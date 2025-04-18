@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { generatePdf } from "./pdfGenerator";
+import axios from "axios";
 
 const Home = () => {
   const [brands, setBrands] = useState([]);
@@ -8,8 +8,18 @@ const Home = () => {
   const [selectedBrand, setSelectedBrand] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
   const [parts, setParts] = useState(null);
-  const [selectedExtras, setSelectedExtras] = useState({ balata: false, disk: false, silecek: false });
-  const [formData, setFormData] = useState({ adSoyad: "", telefon: "", plaka: "", randevuTarihi: "" });
+  const [selectedExtras, setSelectedExtras] = useState({
+    balata: false,
+    disk: false,
+    silecek: false,
+  });
+  const [formData, setFormData] = useState({
+    adSoyad: "",
+    telefon: "",
+    plaka: "",
+    arac: "",
+    randevuTarihi: ""
+  });
 
   useEffect(() => {
     axios.get("/api/brands").then((res) => setBrands(res.data));
@@ -23,47 +33,56 @@ const Home = () => {
 
   useEffect(() => {
     if (selectedBrand && selectedModel) {
-      axios.get(`/api/parts?brand=${selectedBrand}&model=${selectedModel}`).then((res) => setParts(res.data));
-      axios.post("/api/log/fiyatbakma");
+      axios.get(`/api/parts?brand=${selectedBrand}&model=${selectedModel}`).then((res) => {
+        setParts(res.data);
+        setFormData(prev => ({ ...prev, arac: `${selectedBrand} ${selectedModel}` }));
+      });
+      axios.post("/api/log/fiyatbakma").catch(() => {});
     }
   }, [selectedBrand, selectedModel]);
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!parts) {
+      alert("Lütfen bir marka ve model seçin.");
+      return;
+    }
+    try {
+      await axios.post("/api/randevu-olustur", { ...formData, arac: `${selectedBrand} ${selectedModel}` });
+      generatePdf(formData, calculateTotal(), parts, selectedExtras);
+      alert("✅ Randevu başarıyla oluşturuldu ve PDF indirildi.");
+    } catch {
+      alert("❌ Randevu oluşturulamadı.");
+    }
+  };
+
   const calculateTotal = () => {
     if (!parts) return 0;
-    let total = parts.baseParts.reduce((sum, p) => sum + p.toplam, 0);
+    let total = 0;
+    parts.baseParts.forEach(p => total += p.toplam);
     Object.keys(selectedExtras).forEach(key => {
       if (selectedExtras[key]) {
-        parts.optional[key]?.forEach(p => total += p.toplam);
+        parts.optional[key].forEach(p => total += p.toplam);
       }
     });
     total += parts.labor.toplam;
     return total;
   };
 
-  const handleRandevuOlustur = async () => {
-    try {
-      const randevuData = {
-        ...formData,
-        arac: `${selectedBrand} ${selectedModel}`,
-        fiyat: calculateTotal(),
-        secilenEkstralar: selectedExtras
-      };
-      await axios.post("/api/randevu", randevuData);
-      alert("✅ Randevu oluşturuldu!");
-      generatePdf(randevuData, parts, selectedExtras);
-    } catch (error) {
-      console.error(error);
-      alert("❌ Randevu oluşturulamadı!");
-    }
-  };
-
   return (
-    <div>
+    <>
+      <h2 className="text-2xl font-bold mb-4">Periyodik Bakım Fiyat Sorgulama</h2>
+
       <div className="selectors mb-6">
-        <select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)}>
+        <select value={selectedBrand} onChange={(e) => {
+          setSelectedBrand(e.target.value);
+          setSelectedModel("");
+          setParts(null);
+        }}>
           <option value="">Marka Seç</option>
           {brands.map(b => <option key={b} value={b}>{b}</option>)}
         </select>
+
         <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} disabled={!selectedBrand}>
           <option value="">Model Seç</option>
           {models.map(m => <option key={m} value={m}>{m}</option>)}
@@ -72,14 +91,6 @@ const Home = () => {
 
       {parts && (
         <>
-          <div className="extras mb-4">
-            {["balata", "disk", "silecek"].map(opt => (
-              <label key={opt}>
-                <input type="checkbox" checked={selectedExtras[opt]} onChange={() => setSelectedExtras(prev => ({ ...prev, [opt]: !prev[opt] }))} /> {opt.toUpperCase()}
-              </label>
-            ))}
-          </div>
-
           <table>
             <thead>
               <tr>
@@ -100,9 +111,9 @@ const Home = () => {
                   <td>{p.toplam}</td>
                 </tr>
               ))}
-              {Object.keys(selectedExtras).map(opt =>
-                selectedExtras[opt] && parts.optional[opt]?.map((p, idx) => (
-                  <tr key={`${opt}-${idx}`}>
+              {Object.entries(parts.optional).map(([key, items]) =>
+                selectedExtras[key] && items.map((p, i) => (
+                  <tr key={`${key}-${i}`}>
                     <td>{p.kategori}</td>
                     <td>{p.urun_tip}</td>
                     <td>{p.birim}</td>
@@ -111,7 +122,7 @@ const Home = () => {
                   </tr>
                 ))
               )}
-              <tr className="font-bold">
+              <tr>
                 <td>{parts.labor.kategori}</td>
                 <td>{parts.labor.urun_tip}</td>
                 <td>{parts.labor.birim}</td>
@@ -121,18 +132,29 @@ const Home = () => {
             </tbody>
           </table>
 
-          <div className="text-xl font-semibold mt-4">Toplam: {calculateTotal()} TL (KDV Dahil)</div>
-
-          <div className="mt-8 flex flex-col gap-4">
-            <input type="text" placeholder="Ad Soyad" name="adSoyad" onChange={(e) => setFormData(prev => ({ ...prev, adSoyad: e.target.value }))} className="border p-2" />
-            <input type="tel" placeholder="Telefon" name="telefon" onChange={(e) => setFormData(prev => ({ ...prev, telefon: e.target.value }))} className="border p-2" />
-            <input type="text" placeholder="Plaka" name="plaka" onChange={(e) => setFormData(prev => ({ ...prev, plaka: e.target.value }))} className="border p-2" />
-            <input type="datetime-local" name="randevuTarihi" onChange={(e) => setFormData(prev => ({ ...prev, randevuTarihi: e.target.value }))} className="border p-2" />
-            <button onClick={handleRandevuOlustur} className="button">📄 Teklifi PDF Olarak Al ve Randevu Oluştur</button>
+          <div className="extras mt-4">
+            {["balata", "disk", "silecek"].map(opt => (
+              <label key={opt}>
+                <input type="checkbox" checked={selectedExtras[opt]} onChange={() => setSelectedExtras(prev => ({ ...prev, [opt]: !prev[opt] }))} />
+                {opt.toUpperCase()}
+              </label>
+            ))}
           </div>
+
+          <h3 className="text-xl mt-4">Toplam: {calculateTotal()} TL</h3>
         </>
       )}
-    </div>
+
+      <h2 className="text-2xl font-bold my-6">Randevu Formu</h2>
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <input type="text" name="adSoyad" placeholder="Ad Soyad" value={formData.adSoyad} onChange={(e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))} required />
+        <input type="tel" name="telefon" placeholder="Telefon" value={formData.telefon} onChange={(e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))} required />
+        <input type="text" name="plaka" placeholder="Araç Plakası" value={formData.plaka} onChange={(e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))} required />
+        <input type="datetime-local" name="randevuTarihi" value={formData.randevuTarihi} onChange={(e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))} required />
+        <button type="submit" className="button mt-4">📄 Teklifi PDF Olarak Al ve Randevu Oluştur</button>
+      </form>
+    </>
   );
 };
 
