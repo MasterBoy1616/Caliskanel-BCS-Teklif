@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { generatePdf } from "./pdfGenerator";
 
 const Home = () => {
   const [brands, setBrands] = useState([]);
@@ -13,7 +12,6 @@ const Home = () => {
     disk: false,
     silecek: false,
   });
-
   const [formData, setFormData] = useState({
     adSoyad: "",
     telefon: "",
@@ -34,51 +32,32 @@ const Home = () => {
   useEffect(() => {
     if (selectedBrand && selectedModel) {
       axios.get(`/api/parts?brand=${selectedBrand}&model=${selectedModel}`).then((res) => setParts(res.data));
-      axios.post("/api/log/fiyatbakma"); // Logla
+      axios.post("/api/log/fiyatbakma").catch(() => {});
     }
   }, [selectedBrand, selectedModel]);
 
-  const handleFormChange = (e) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
-  };
-
-  const handleCreateRandevuAndPdf = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const { adSoyad, telefon, plaka, randevuTarihi } = formData;
-    if (!adSoyad || !telefon || !plaka || !randevuTarihi) {
-      alert("Lütfen tüm bilgileri doldurunuz.");
-      return;
-    }
-    const selectedOptionalParts = [];
-    Object.entries(selectedExtras).forEach(([key, val]) => {
-      if (val && parts.optional[key]) {
-        selectedOptionalParts.push(...parts.optional[key]);
-      }
-    });
-
-    const randevuData = {
-      adSoyad,
-      telefon,
-      plaka,
-      arac: `${selectedBrand} ${selectedModel}`,
-      randevuTarihi,
-      parts: parts.baseParts,
-      optionalParts: selectedOptionalParts,
-      labor: parts.labor,
-    };
-
+    const selectedParts = [
+      ...parts.baseParts,
+      ...(selectedExtras.balata ? parts.optional.balata : []),
+      ...(selectedExtras.disk ? parts.optional.disk : []),
+      ...(selectedExtras.silecek ? parts.optional.silecek : []),
+      parts.labor
+    ];
     try {
-      await axios.post("/api/randevular/ekle", randevuData);
-      generatePdf(randevuData);
-    } catch (err) {
-      alert("Randevu oluşturulamadı.");
+      await axios.post("/api/randevu", {
+        ...formData,
+        arac: `${selectedBrand} ${selectedModel}`,
+        secilenParcalar: selectedParts
+      });
+      alert("Randevu oluşturuldu ✅");
+    } catch {
+      alert("Randevu oluşturulamadı ❌");
     }
   };
 
-  const calculateTotal = () => {
+  const toplamFiyat = () => {
     if (!parts) return 0;
     let total = 0;
     parts.baseParts.forEach(p => total += p.toplam);
@@ -92,54 +71,40 @@ const Home = () => {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Periyodik Bakım Fiyat Sorgulama</h2>
+    <div className="p-6">
+      <h1 className="text-3xl font-bold mb-6 text-center">Periyodik Bakım Fiyatı & Randevu</h1>
 
-      {/* Marka ve Model Seçimi */}
-      <div className="flex gap-4 mb-4">
-        <select
-          value={selectedBrand}
-          onChange={(e) => {
-            setSelectedBrand(e.target.value);
-            setSelectedModel("");
-            setParts(null);
-          }}
-          className="border p-2 rounded w-1/2"
-        >
+      <div className="flex gap-4 mb-6 justify-center">
+        <select value={selectedBrand} onChange={(e) => { setSelectedBrand(e.target.value); setSelectedModel(""); setParts(null); }} className="p-2 border rounded">
           <option value="">Marka Seç</option>
-          {brands.map((b) => (
-            <option key={b} value={b}>
-              {b}
-            </option>
-          ))}
+          {brands.map((b) => <option key={b} value={b}>{b}</option>)}
         </select>
 
-        <select
-          value={selectedModel}
-          onChange={(e) => setSelectedModel(e.target.value)}
-          disabled={!selectedBrand}
-          className="border p-2 rounded w-1/2"
-        >
+        <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} disabled={!selectedBrand} className="p-2 border rounded">
           <option value="">Model Seç</option>
-          {models.map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
+          {models.map((m) => <option key={m} value={m}>{m}</option>)}
         </select>
       </div>
 
-      {/* Parçalar */}
       {parts && (
         <>
+          <div className="flex gap-4 mb-4 justify-center">
+            {["balata", "disk", "silecek"].map(opt => (
+              <label key={opt} className="flex items-center gap-2">
+                <input type="checkbox" checked={selectedExtras[opt]} onChange={() => setSelectedExtras(prev => ({ ...prev, [opt]: !prev[opt] }))} />
+                {opt.toUpperCase()}
+              </label>
+            ))}
+          </div>
+
           <table className="w-full table-auto border mb-6">
             <thead>
-              <tr className="bg-gray-100">
+              <tr className="bg-gray-200">
                 <th className="p-2 border">Kategori</th>
                 <th className="p-2 border">Ürün</th>
                 <th className="p-2 border">Birim</th>
-                <th className="p-2 border">Fiyat</th>
-                <th className="p-2 border">Toplam</th>
+                <th className="p-2 border">Fiyat (TL)</th>
+                <th className="p-2 border">Toplam (TL)</th>
               </tr>
             </thead>
             <tbody>
@@ -148,66 +113,46 @@ const Home = () => {
                   <td className="p-2 border">{p.kategori}</td>
                   <td className="p-2 border">{p.urun_tip}</td>
                   <td className="p-2 border">{p.birim}</td>
-                  <td className="p-2 border">{p.fiyat} TL</td>
-                  <td className="p-2 border">{p.toplam} TL</td>
+                  <td className="p-2 border">{p.fiyat}</td>
+                  <td className="p-2 border">{p.toplam}</td>
                 </tr>
               ))}
-              {Object.entries(parts.optional).map(([key, items]) =>
+              {Object.entries(parts.optional).map(([key, items]) => (
                 selectedExtras[key] ? items.map((p, i) => (
                   <tr key={`${key}-${i}`}>
                     <td className="p-2 border">{p.kategori}</td>
                     <td className="p-2 border">{p.urun_tip}</td>
                     <td className="p-2 border">{p.birim}</td>
-                    <td className="p-2 border">{p.fiyat} TL</td>
-                    <td className="p-2 border">{p.toplam} TL</td>
+                    <td className="p-2 border">{p.fiyat}</td>
+                    <td className="p-2 border">{p.toplam}</td>
                   </tr>
                 )) : null
-              )}
+              ))}
               <tr className="font-bold">
                 <td className="p-2 border">{parts.labor.kategori}</td>
                 <td className="p-2 border">{parts.labor.urun_tip}</td>
                 <td className="p-2 border">{parts.labor.birim}</td>
-                <td className="p-2 border">{parts.labor.fiyat} TL</td>
-                <td className="p-2 border">{parts.labor.toplam} TL</td>
+                <td className="p-2 border">{parts.labor.fiyat}</td>
+                <td className="p-2 border">{parts.labor.toplam}</td>
               </tr>
             </tbody>
           </table>
 
-          {/* Toplam */}
-          <h3 className="text-xl font-bold mb-6">Toplam: {calculateTotal()} TL</h3>
+          <div className="text-xl font-bold mb-6 text-center">
+            Toplam: {toplamFiyat()} TL (KDV Dahil)
+          </div>
+
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4 items-center">
+            <input type="text" name="adSoyad" placeholder="Ad Soyad" required onChange={(e) => setFormData({ ...formData, adSoyad: e.target.value })} className="p-2 border rounded w-1/2" />
+            <input type="tel" name="telefon" placeholder="Telefon" required onChange={(e) => setFormData({ ...formData, telefon: e.target.value })} className="p-2 border rounded w-1/2" />
+            <input type="text" name="plaka" placeholder="Araç Plakası" required onChange={(e) => setFormData({ ...formData, plaka: e.target.value })} className="p-2 border rounded w-1/2" />
+            <input type="datetime-local" name="randevuTarihi" required onChange={(e) => setFormData({ ...formData, randevuTarihi: e.target.value })} className="p-2 border rounded w-1/2" />
+            <button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+              Randevu Oluştur 📅
+            </button>
+          </form>
         </>
       )}
-
-      {/* Ekstralar */}
-      <div className="flex gap-4 mb-6">
-        {["balata", "disk", "silecek"].map((opt) => (
-          <label key={opt} className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={selectedExtras[opt]}
-              onChange={() =>
-                setSelectedExtras((prev) => ({
-                  ...prev,
-                  [opt]: !prev[opt],
-                }))
-              }
-            />
-            {opt.toUpperCase()}
-          </label>
-        ))}
-      </div>
-
-      {/* Randevu Bilgileri */}
-      <form onSubmit={handleCreateRandevuAndPdf} className="flex flex-col gap-4">
-        <input type="text" name="adSoyad" placeholder="Ad Soyad" value={formData.adSoyad} onChange={handleFormChange} required className="p-2 border rounded" />
-        <input type="tel" name="telefon" placeholder="Telefon" value={formData.telefon} onChange={handleFormChange} required className="p-2 border rounded" />
-        <input type="text" name="plaka" placeholder="Araç Plakası" value={formData.plaka} onChange={handleFormChange} required className="p-2 border rounded" />
-        <input type="datetime-local" name="randevuTarihi" value={formData.randevuTarihi} onChange={handleFormChange} required className="p-2 border rounded" />
-
-        <button type="submit" className="bg-green-500 hover:bg-green-600 text-white font-bold p-3 rounded mt-4">
-          📄 Randevu Oluştur ve PDF Al
-        </button>
-      </form>
     </div>
   );
 };
