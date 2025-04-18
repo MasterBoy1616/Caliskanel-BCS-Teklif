@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Body
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 import pandas as pd
 import os
 import json
@@ -39,6 +39,7 @@ def parse_row(row):
         "toplam": toplam
     }
 
+# Marka - Model - Parça verileri
 @app.get("/api/brands")
 def get_brands():
     df = sheets["02_TavsiyeEdilenBakımListesi"]
@@ -145,9 +146,10 @@ def delete_randevu(index: int = Body(...)):
                 return {"success": True}
     return {"success": False}
 
-# Frontend yayınlama
-app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
+# Frontend yayınlama (statik dosyalar ve SPA yönlendirme)
 
-@app.get("/{full_path:path}")
+app.mount("/static", StaticFiles(directory="frontend/dist/assets"), name="static")
+
+@app.get("/{full_path:path}", response_class=HTMLResponse)
 async def serve_spa(full_path: str):
     return FileResponse("frontend/dist/index.html")
