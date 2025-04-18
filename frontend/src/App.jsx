@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom";
 import AdminPanel from "./Admin";
 import Home from "./Home";
@@ -8,6 +8,16 @@ import Login from "./Login";
 
 const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const loginStatus = localStorage.getItem("isLoggedIn") === "true";
+    setIsLoggedIn(loginStatus);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("isLoggedIn");
+    setIsLoggedIn(false);
+  };
 
   return (
     <Router>
@@ -19,8 +29,8 @@ const App = () => {
           {isLoggedIn ? (
             <>
               <Link to="/admin">Admin</Link>
-              <button onClick={() => setIsLoggedIn(false)} className="bg-red-500 px-3 py-1 rounded">
-                Çıkış
+              <button onClick={handleLogout} className="bg-red-500 px-3 py-1 rounded">
+                Çıkış Yap
               </button>
             </>
           ) : (
