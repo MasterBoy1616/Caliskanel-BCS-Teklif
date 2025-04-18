@@ -151,3 +151,19 @@ app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
 @app.get("/{full_path:path}")
 async def serve_spa(full_path: str):
     return FileResponse("frontend/dist/index.html")
+
+from fastapi import Request
+
+# Güncellenen fiyatları kaydet
+@app.post("/api/save-prices")
+async def save_prices(request: Request):
+    data = await request.json()
+
+    save_path = "backend/logs/guncel_fiyatlar.json"
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+
+    with open(save_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+    return {"success": True, "message": "Fiyatlar kaydedildi"}
+
