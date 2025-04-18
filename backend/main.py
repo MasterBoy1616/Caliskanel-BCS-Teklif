@@ -90,7 +90,7 @@ def get_parts(brand: str, model: str):
         "labor": labor
     }
 
-# Log Sistemi
+# Log sistemleri
 
 @app.get("/api/log/fiyatbakmasayisi")
 def get_fiyat_bakma_sayisi():
@@ -108,11 +108,14 @@ def get_randevu_sayisi():
             return {"adet": len(logs)}
     return {"adet": 0}
 
+# Randevu yönetimi
+
 @app.get("/api/randevular")
 def get_randevular():
     if os.path.exists(RANDEVU_LOG_PATH):
         with open(RANDEVU_LOG_PATH, "r") as f:
             randevular = json.load(f)
+            randevular.sort(key=lambda x: x.get("randevuTarihi", ""), reverse=True)
             return randevular
     return []
 
@@ -129,7 +132,20 @@ def update_randevu(index: int = Body(...), durum: str = Body(...)):
                 return {"success": True}
     return {"success": False}
 
-# Frontend build dosyalarını yayınla
+@app.delete("/api/randevular/delete")
+def delete_randevu(index: int = Body(...)):
+    if os.path.exists(RANDEVU_LOG_PATH):
+        with open(RANDEVU_LOG_PATH, "r+") as f:
+            logs = json.load(f)
+            if 0 <= index < len(logs):
+                logs.pop(index)
+                f.seek(0)
+                json.dump(logs, f, indent=2, ensure_ascii=False)
+                f.truncate()
+                return {"success": True}
+    return {"success": False}
+
+# Frontend yayınlama
 app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
 
 @app.get("/{full_path:path}")
