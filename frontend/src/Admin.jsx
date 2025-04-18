@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 const AdminPanel = () => {
   const [brands, setBrands] = useState([]);
@@ -10,6 +13,8 @@ const AdminPanel = () => {
   const [fiyatBakmaCount, setFiyatBakmaCount] = useState(0);
   const [randevuCount, setRandevuCount] = useState(0);
   const [randevular, setRandevular] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [dateFilter, setDateFilter] = useState({ start: "", end: "" });
 
   useEffect(() => {
     axios.get("/api/brands").then((res) => setBrands(res.data));
@@ -32,7 +37,6 @@ const AdminPanel = () => {
         .then((res) => setParts(res.data));
     }
   }, [selectedBrand, selectedModel]);
-
   const calculateTotal = () => {
     if (!parts) return 0;
     let total = 0;
@@ -50,8 +54,7 @@ const AdminPanel = () => {
         setRandevular(prev =>
           prev.map((r, i) => (i === index ? { ...r, durum: "Onaylandı" } : r))
         );
-      })
-      .catch((err) => console.error("Onaylama hatası:", err));
+      });
   };
 
   const handleIptalEt = (index) => {
@@ -60,16 +63,14 @@ const AdminPanel = () => {
         setRandevular(prev =>
           prev.map((r, i) => (i === index ? { ...r, durum: "İptal Edildi" } : r))
         );
-      })
-      .catch((err) => console.error("İptal hatası:", err));
+      });
   };
 
   const handleSil = (index) => {
     axios.delete("/api/randevular/delete", { data: { index: index } })
       .then(() => {
         setRandevular(prev => prev.filter((_, i) => i !== index));
-      })
-      .catch((err) => console.error("Silme hatası:", err));
+      });
   };
 
   const durumRenk = (durum) => {
@@ -78,6 +79,42 @@ const AdminPanel = () => {
     return "text-gray-600 font-bold";
   };
 
+  const exportExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(filteredRandevular);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Randevular");
+    XLSX.writeFile(wb, "randevular.xlsx");
+  };
+
+  const exportPDF = () => {
+    const doc = new jsPDF();
+    const columns = ["Ad Soyad", "Telefon", "Plaka", "Araç", "Randevu Tarihi", "Durum"];
+    const rows = filteredRandevular.map(r => [
+      r.adSoyad, r.telefon, r.plaka, r.arac, r.randevuTarihi.replace("T", " "), r.durum
+    ]);
+
+    doc.autoTable({
+      head: [columns],
+      body: rows,
+    });
+    doc.save("randevular.pdf");
+  };
+
+  const filteredRandevular = randevular.filter(r => {
+    const term = searchTerm.toLowerCase();
+    const matchesSearch = (
+      r.adSoyad.toLowerCase().includes(term) ||
+      r.telefon.toLowerCase().includes(term) ||
+      r.plaka.toLowerCase().includes(term) ||
+      r.arac.toLowerCase().includes(term)
+    );
+
+    const dateOk =
+      (!dateFilter.start || r.randevuTarihi >= dateFilter.start) &&
+      (!dateFilter.end || r.randevuTarihi <= dateFilter.end);
+
+    return matchesSearch && dateOk;
+  });
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <h2 className="text-2xl font-bold mb-4">Admin Panel - Fiyat Takibi ve Randevu Yönetimi</h2>
@@ -107,9 +144,38 @@ const AdminPanel = () => {
         </div>
       </div>
 
+      {/* Arama ve Tarih Filtre */}
+      <div className="flex flex-wrap gap-4 mb-6">
+        <input
+          type="text"
+          placeholder="Arama (İsim, Plaka, Araç)"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="border p-2 rounded flex-1"
+        />
+        <input
+          type="date"
+          value={dateFilter.start}
+          onChange={(e) => setDateFilter(prev => ({ ...prev, start: e.target.value }))}
+          className="border p-2 rounded"
+        />
+        <input
+          type="date"
+          value={dateFilter.end}
+          onChange={(e) => setDateFilter(prev => ({ ...prev, end: e.target.value }))}
+          className="border p-2 rounded"
+        />
+        <button onClick={exportExcel} className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded">
+          Excel İndir
+        </button>
+        <button onClick={exportPDF} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded">
+          PDF İndir
+        </button>
+      </div>
+
       {/* Fiyat Listesi */}
       {parts && (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto mb-8">
           <table className="min-w-full table-auto border">
             <thead>
               <tr className="bg-gray-200">
@@ -154,12 +220,11 @@ const AdminPanel = () => {
           <h3 className="mt-6 text-lg font-bold">Toplam: {calculateTotal()} TL</h3>
         </div>
       )}
-
       {/* Randevu Listesi */}
       <div className="mt-10">
         <h2 className="text-2xl font-bold mb-4">Gelen Randevular</h2>
-        {randevular.length === 0 ? (
-          <p>Henüz randevu alınmamış.</p>
+        {filteredRandevular.length === 0 ? (
+          <p>Sonuç bulunamadı veya henüz randevu alınmamış.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full table-auto border">
@@ -175,7 +240,7 @@ const AdminPanel = () => {
                 </tr>
               </thead>
               <tbody>
-                {randevular.map((r, i) => (
+                {filteredRandevular.map((r, i) => (
                   <tr key={i}>
                     <td className="p-2 border">{r.adSoyad}</td>
                     <td className="p-2 border">{r.telefon}</td>
@@ -190,7 +255,7 @@ const AdminPanel = () => {
                       <button onClick={() => handleIptalEt(i)} className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded">
                         İptal Et
                       </button>
-                      <button onClick={() => handleSil(i)} className="bg-gray-400 hover:bg-gray-500 text-white px-2 py-1 rounded">
+                      <button onClick={() => handleSil(i)} className="bg-gray-500 hover:bg-gray-600 text-white px-2 py-1 rounded">
                         Sil
                       </button>
                     </td>
@@ -201,7 +266,6 @@ const AdminPanel = () => {
           </div>
         )}
       </div>
-
     </div>
   );
 };
