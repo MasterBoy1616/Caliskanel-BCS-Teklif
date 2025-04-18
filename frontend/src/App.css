@@ -85,3 +85,19 @@ table th, table td {
   margin-right: 15px;
   font-weight: bold;
 }
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f9f9f9;
+  margin: 0;
+  padding: 0;
+}
+
+input, select, button {
+  font-family: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
