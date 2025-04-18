@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Body
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import pandas as pd
@@ -11,6 +11,10 @@ app = FastAPI()
 # Excel dosyası
 excel_path = "backend/yeni_bosch_fiyatlari.xlsm"
 sheets = pd.read_excel(excel_path, sheet_name=None)
+
+# Log dosyası path'leri
+FIYAT_LOG_PATH = "backend/logs/fiyat_bakma_logu.json"
+RANDEVU_LOG_PATH = "backend/logs/randevu_logu.json"
 
 def parse_miktar(birim_str):
     try:
@@ -49,16 +53,7 @@ def get_models(brand: str):
 def get_parts(brand: str, model: str):
     df = sheets["02_TavsiyeEdilenBakımListesi"]
     df = df[(df["MARKA"] == brand) & (df["MODEL"] == model)]
-# Tüm randevuları listeleyen endpoint
-@app.get("/api/randevular")
-def get_randevular():
-    if os.path.exists(RANDEVU_LOG_PATH):
-        with open(RANDEVU_LOG_PATH, "r") as f:
-            randevular = json.load(f)
-            return randevular
-    return []
 
-    
     kategori_listesi = ["MotorYağ", "YağFiltresi", "HavaFiltresi", "PolenFiltre", "YakıtFiltresi"]
     base_parts = []
     for kategori in kategori_listesi:
@@ -73,9 +68,30 @@ def get_randevular():
             parts.append(parse_row(match_part.iloc[0]))
         if iscilik_anahtar:
             match_iscilik = df[(df["KATEGORİ"] == "İşçilik") & (df["ÜRÜN/TİP"].str.contains(iscilik_anahtar, na=False))]
-            if not
+            if not match_iscilik.empty:
+                parts.append(parse_row(match_iscilik.iloc[0]))
+        return parts
 
-            # Toplam fiyat bakma log sayısını döner
+    optional = {
+        "balata": get_optional_parts("ÖnFrenBalata", "Balata"),
+        "disk": get_optional_parts("ÖnFrenDisk", "Disk"),
+        "silecek": get_optional_parts("Silecek")
+    }
+
+    labor_match = df[(df["KATEGORİ"] == "İşçilik") & (df["ÜRÜN/TİP"].str.contains("Periyodik", na=False))]
+    if not labor_match.empty:
+        labor = parse_row(labor_match.iloc[0])
+    else:
+        labor = {"kategori": "İşçilik", "urun_tip": "Periyodik Bakım", "birim": 1, "fiyat": 0, "toplam": 0}
+
+    return {
+        "baseParts": base_parts,
+        "optional": optional,
+        "labor": labor
+    }
+
+# Log Sistemi
+
 @app.get("/api/log/fiyatbakmasayisi")
 def get_fiyat_bakma_sayisi():
     if os.path.exists(FIYAT_LOG_PATH):
@@ -84,7 +100,6 @@ def get_fiyat_bakma_sayisi():
             return {"adet": len(logs)}
     return {"adet": 0}
 
-# Toplam randevu log sayısını döner
 @app.get("/api/log/randevusayisi")
 def get_randevu_sayisi():
     if os.path.exists(RANDEVU_LOG_PATH):
@@ -93,3 +108,30 @@ def get_randevu_sayisi():
             return {"adet": len(logs)}
     return {"adet": 0}
 
+@app.get("/api/randevular")
+def get_randevular():
+    if os.path.exists(RANDEVU_LOG_PATH):
+        with open(RANDEVU_LOG_PATH, "r") as f:
+            randevular = json.load(f)
+            return randevular
+    return []
+
+@app.patch("/api/randevular/update")
+def update_randevu(index: int = Body(...), durum: str = Body(...)):
+    if os.path.exists(RANDEVU_LOG_PATH):
+        with open(RANDEVU_LOG_PATH, "r+") as f:
+            logs = json.load(f)
+            if 0 <= index < len(logs):
+                logs[index]["durum"] = durum
+                f.seek(0)
+                json.dump(logs, f, indent=2, ensure_ascii=False)
+                f.truncate()
+                return {"success": True}
+    return {"success": False}
+
+# Frontend build dosyalarını yayınla
+app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
+
+@app.get("/{full_path:path}")
+async def serve_spa(full_path: str):
+    return FileResponse("frontend/dist/index.html")
