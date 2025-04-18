@@ -49,7 +49,16 @@ def get_models(brand: str):
 def get_parts(brand: str, model: str):
     df = sheets["02_TavsiyeEdilenBakımListesi"]
     df = df[(df["MARKA"] == brand) & (df["MODEL"] == model)]
+# Tüm randevuları listeleyen endpoint
+@app.get("/api/randevular")
+def get_randevular():
+    if os.path.exists(RANDEVU_LOG_PATH):
+        with open(RANDEVU_LOG_PATH, "r") as f:
+            randevular = json.load(f)
+            return randevular
+    return []
 
+    
     kategori_listesi = ["MotorYağ", "YağFiltresi", "HavaFiltresi", "PolenFiltre", "YakıtFiltresi"]
     base_parts = []
     for kategori in kategori_listesi:
