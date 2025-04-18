@@ -3,6 +3,7 @@ import axios from "axios";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import { FaCheck, FaTrash } from "react-icons/fa";
 
 const AdminPanel = () => {
   const [brands, setBrands] = useState([]);
@@ -15,6 +16,7 @@ const AdminPanel = () => {
   const [randevular, setRandevular] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState({ start: "", end: "" });
+  const [selectedIndexes, setSelectedIndexes] = useState([]);
 
   useEffect(() => {
     axios.get("/api/brands").then((res) => setBrands(res.data));
@@ -37,6 +39,29 @@ const AdminPanel = () => {
         .then((res) => setParts(res.data));
     }
   }, [selectedBrand, selectedModel]);
+
+  const toggleSelect = (index) => {
+    if (selectedIndexes.includes(index)) {
+      setSelectedIndexes(selectedIndexes.filter((i) => i !== index));
+    } else {
+      setSelectedIndexes([...selectedIndexes, index]);
+    }
+  };
+
+  const handleTopluOnayla = () => {
+    const updated = randevular.map((r, i) =>
+      selectedIndexes.includes(i) ? { ...r, durum: "Onaylandı" } : r
+    );
+    setRandevular(updated);
+    setSelectedIndexes([]);
+  };
+
+  const handleTopluSil = () => {
+    const updated = randevular.filter((_, i) => !selectedIndexes.includes(i));
+    setRandevular(updated);
+    setSelectedIndexes([]);
+  };
+
   const calculateTotal = () => {
     if (!parts) return 0;
     let total = 0;
@@ -46,31 +71,6 @@ const AdminPanel = () => {
     });
     total += parts.labor.toplam;
     return total;
-  };
-
-  const handleOnayla = (index) => {
-    axios.patch("/api/randevular/update", { index: index, durum: "Onaylandı" })
-      .then(() => {
-        setRandevular(prev =>
-          prev.map((r, i) => (i === index ? { ...r, durum: "Onaylandı" } : r))
-        );
-      });
-  };
-
-  const handleIptalEt = (index) => {
-    axios.patch("/api/randevular/update", { index: index, durum: "İptal Edildi" })
-      .then(() => {
-        setRandevular(prev =>
-          prev.map((r, i) => (i === index ? { ...r, durum: "İptal Edildi" } : r))
-        );
-      });
-  };
-
-  const handleSil = (index) => {
-    axios.delete("/api/randevular/delete", { data: { index: index } })
-      .then(() => {
-        setRandevular(prev => prev.filter((_, i) => i !== index));
-      });
   };
 
   const durumRenk = (durum) => {
@@ -92,7 +92,6 @@ const AdminPanel = () => {
     const rows = filteredRandevular.map(r => [
       r.adSoyad, r.telefon, r.plaka, r.arac, r.randevuTarihi.replace("T", " "), r.durum
     ]);
-
     doc.autoTable({
       head: [columns],
       body: rows,
@@ -108,13 +107,13 @@ const AdminPanel = () => {
       r.plaka.toLowerCase().includes(term) ||
       r.arac.toLowerCase().includes(term)
     );
-
     const dateOk =
       (!dateFilter.start || r.randevuTarihi >= dateFilter.start) &&
       (!dateFilter.end || r.randevuTarihi <= dateFilter.end);
 
     return matchesSearch && dateOk;
   });
+
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <h2 className="text-2xl font-bold mb-4">Admin Panel - Fiyat Takibi ve Randevu Yönetimi</h2>
@@ -144,7 +143,7 @@ const AdminPanel = () => {
         </div>
       </div>
 
-      {/* Arama ve Tarih Filtre */}
+      {/* Arama + Tarih + Export */}
       <div className="flex flex-wrap gap-4 mb-6">
         <input
           type="text"
@@ -173,98 +172,59 @@ const AdminPanel = () => {
         </button>
       </div>
 
-      {/* Fiyat Listesi */}
-      {parts && (
-        <div className="overflow-x-auto mb-8">
-          <table className="min-w-full table-auto border">
-            <thead>
-              <tr className="bg-gray-200">
-                <th className="p-2 border">Kategori</th>
-                <th className="p-2 border">Ürün/TİP</th>
-                <th className="p-2 border">Birim</th>
-                <th className="p-2 border">Fiyat</th>
-                <th className="p-2 border">Toplam</th>
-              </tr>
-            </thead>
-            <tbody>
-              {parts.baseParts.map((p, i) => (
-                <tr key={i}>
-                  <td className="p-2 border">{p.kategori}</td>
-                  <td className="p-2 border">{p.urun_tip}</td>
-                  <td className="p-2 border">{p.birim}</td>
-                  <td className="p-2 border">{p.fiyat} TL</td>
-                  <td className="p-2 border">{p.toplam} TL</td>
-                </tr>
-              ))}
-              {Object.entries(parts.optional).map(([key, items]) =>
-                items.map((p, i) => (
-                  <tr key={`${key}-${i}`}>
-                    <td className="p-2 border">{p.kategori}</td>
-                    <td className="p-2 border">{p.urun_tip}</td>
-                    <td className="p-2 border">{p.birim}</td>
-                    <td className="p-2 border">{p.fiyat} TL</td>
-                    <td className="p-2 border">{p.toplam} TL</td>
-                  </tr>
-                ))
-              )}
-              <tr className="font-semibold">
-                <td className="p-2 border">{parts.labor.kategori}</td>
-                <td className="p-2 border">{parts.labor.urun_tip}</td>
-                <td className="p-2 border">{parts.labor.birim}</td>
-                <td className="p-2 border">{parts.labor.fiyat} TL</td>
-                <td className="p-2 border">{parts.labor.toplam} TL</td>
-              </tr>
-            </tbody>
-          </table>
+      {/* Toplu İşlem Butonları */}
+      <div className="flex gap-4 mb-6">
+        <button
+          onClick={handleTopluOnayla}
+          disabled={selectedIndexes.length === 0}
+          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded disabled:bg-green-300"
+        >
+          <FaCheck /> Seçilenleri Onayla
+        </button>
 
-          <h3 className="mt-6 text-lg font-bold">Toplam: {calculateTotal()} TL</h3>
-        </div>
-      )}
+        <button
+          onClick={handleTopluSil}
+          disabled={selectedIndexes.length === 0}
+          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded disabled:bg-red-300"
+        >
+          <FaTrash /> Seçilenleri Sil
+        </button>
+      </div>
+
       {/* Randevu Listesi */}
-      <div className="mt-10">
-        <h2 className="text-2xl font-bold mb-4">Gelen Randevular</h2>
-        {filteredRandevular.length === 0 ? (
-          <p>Sonuç bulunamadı veya henüz randevu alınmamış.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full table-auto border">
-              <thead>
-                <tr className="bg-gray-200">
-                  <th className="p-2 border">Ad Soyad</th>
-                  <th className="p-2 border">Telefon</th>
-                  <th className="p-2 border">Plaka</th>
-                  <th className="p-2 border">Araç</th>
-                  <th className="p-2 border">Randevu Tarihi</th>
-                  <th className="p-2 border">Durum</th>
-                  <th className="p-2 border">İşlem</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRandevular.map((r, i) => (
-                  <tr key={i}>
-                    <td className="p-2 border">{r.adSoyad}</td>
-                    <td className="p-2 border">{r.telefon}</td>
-                    <td className="p-2 border">{r.plaka}</td>
-                    <td className="p-2 border">{r.arac}</td>
-                    <td className="p-2 border">{r.randevuTarihi.replace("T", " ")}</td>
-                    <td className={`p-2 border ${durumRenk(r.durum)}`}>{r.durum}</td>
-                    <td className="p-2 border flex flex-wrap gap-2">
-                      <button onClick={() => handleOnayla(i)} className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded">
-                        Onayla
-                      </button>
-                      <button onClick={() => handleIptalEt(i)} className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded">
-                        İptal Et
-                      </button>
-                      <button onClick={() => handleSil(i)} className="bg-gray-500 hover:bg-gray-600 text-white px-2 py-1 rounded">
-                        Sil
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+      <div className="overflow-x-auto">
+        <table className="min-w-full table-auto border">
+          <thead>
+            <tr className="bg-gray-200">
+              <th className="p-2 border">Seç</th>
+              <th className="p-2 border">Ad Soyad</th>
+              <th className="p-2 border">Telefon</th>
+              <th className="p-2 border">Plaka</th>
+              <th className="p-2 border">Araç</th>
+              <th className="p-2 border">Randevu Tarihi</th>
+              <th className="p-2 border">Durum</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredRandevular.map((r, i) => (
+              <tr key={i}>
+                <td className="p-2 border text-center">
+                  <input
+                    type="checkbox"
+                    checked={selectedIndexes.includes(i)}
+                    onChange={() => toggleSelect(i)}
+                  />
+                </td>
+                <td className="p-2 border">{r.adSoyad}</td>
+                <td className="p-2 border">{r.telefon}</td>
+                <td className="p-2 border">{r.plaka}</td>
+                <td className="p-2 border">{r.arac}</td>
+                <td className="p-2 border">{r.randevuTarihi.replace("T", " ")}</td>
+                <td className={`p-2 border ${durumRenk(r.durum)}`}>{r.durum}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
