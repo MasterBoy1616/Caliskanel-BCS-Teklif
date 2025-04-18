@@ -1,5 +1,3 @@
-// frontend/src/Admin.jsx
-
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
@@ -18,7 +16,7 @@ const AdminPanel = () => {
     axios.get("/api/log/fiyatbakmasayisi").then((res) => setFiyatBakmaCount(res.data.adet));
     axios.get("/api/log/randevusayisi").then((res) => setRandevuCount(res.data.adet));
     axios.get("/api/randevular").then((res) => 
-      setRandevular(res.data.map(r => ({ ...r }))) // Burada durum backend'den geliyor
+      setRandevular(res.data.map(r => ({ ...r })))
     );
   }, []);
 
@@ -63,12 +61,26 @@ const AdminPanel = () => {
           prev.map((r, i) => (i === index ? { ...r, durum: "İptal Edildi" } : r))
         );
       })
-      .catch((err) => console.error("İptal etme hatası:", err));
+      .catch((err) => console.error("İptal hatası:", err));
+  };
+
+  const handleSil = (index) => {
+    axios.delete("/api/randevular/delete", { data: { index: index } })
+      .then(() => {
+        setRandevular(prev => prev.filter((_, i) => i !== index));
+      })
+      .catch((err) => console.error("Silme hatası:", err));
+  };
+
+  const durumRenk = (durum) => {
+    if (durum === "Onaylandı") return "text-green-600 font-bold";
+    if (durum === "İptal Edildi") return "text-red-600 font-bold";
+    return "text-gray-600 font-bold";
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Admin Panel - Fiyat Takibi</h2>
+    <div className="p-6 max-w-6xl mx-auto">
+      <h2 className="text-2xl font-bold mb-4">Admin Panel - Fiyat Takibi ve Randevu Yönetimi</h2>
 
       {/* Seçim Alanı */}
       <div className="flex gap-4 mb-6">
@@ -170,13 +182,16 @@ const AdminPanel = () => {
                     <td className="p-2 border">{r.plaka}</td>
                     <td className="p-2 border">{r.arac}</td>
                     <td className="p-2 border">{r.randevuTarihi.replace("T", " ")}</td>
-                    <td className="p-2 border font-bold">{r.durum}</td>
-                    <td className="p-2 border flex gap-2">
+                    <td className={`p-2 border ${durumRenk(r.durum)}`}>{r.durum}</td>
+                    <td className="p-2 border flex flex-wrap gap-2">
                       <button onClick={() => handleOnayla(i)} className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded">
                         Onayla
                       </button>
                       <button onClick={() => handleIptalEt(i)} className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded">
                         İptal Et
+                      </button>
+                      <button onClick={() => handleSil(i)} className="bg-gray-400 hover:bg-gray-500 text-white px-2 py-1 rounded">
+                        Sil
                       </button>
                     </td>
                   </tr>
