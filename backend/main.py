@@ -156,5 +156,26 @@ def delete_randevu(index: int = Body(...)):
 app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
 
 @app.get("/{full_path:path}")
+
+@app.post("/api/randevu-olustur")
+async def randevu_olustur(request: Request):
+    data = await request.json()
+
+    # Randevu dosyası yoksa oluştur
+    if not os.path.exists(RANDEVU_LOG_PATH):
+        with open(RANDEVU_LOG_PATH, "w", encoding="utf-8") as f:
+            json.dump([], f)
+
+    # Randevuyu kaydet
+    with open(RANDEVU_LOG_PATH, "r+", encoding="utf-8") as f:
+        logs = json.load(f)
+        logs.append(data)
+        f.seek(0)
+        json.dump(logs, f, indent=2, ensure_ascii=False)
+        f.truncate()
+
+    return {"success": True, "message": "Randevu başarıyla oluşturuldu!"}
+
+
 async def serve_spa(full_path: str):
     return FileResponse("frontend/dist/index.html")
