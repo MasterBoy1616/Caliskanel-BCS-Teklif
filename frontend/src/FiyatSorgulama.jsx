@@ -44,4 +44,92 @@ const FiyatSorgulama = () => {
     let total = 0;
     parts.baseParts.forEach(p => total += p.toplam);
     Object.keys(selectedExtras).forEach(key => {
-      if
+      if (selectedExtras[key]) {
+        parts.optional[key].forEach(p => total += p.toplam);
+      }
+    });
+    total += parts.labor.toplam;
+    return total;
+  };
+
+  return (
+    <div className="app-background">
+      <div className="app-container">
+        <h2>Periyodik Bakım Fiyat Sorgulama</h2>
+        <div className="selectors">
+          <select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)}>
+            <option value="">Marka Seç</option>
+            {brands.map(b => <option key={b}>{b}</option>)}
+          </select>
+          <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} disabled={!selectedBrand}>
+            <option value="">Model Seç</option>
+            {models.map(m => <option key={m}>{m}</option>)}
+          </select>
+        </div>
+
+        {parts && (
+          <>
+            <table>
+              <thead>
+                <tr>
+                  <th>Kategori</th>
+                  <th>Ürün</th>
+                  <th>Birim</th>
+                  <th>Fiyat</th>
+                  <th>Toplam</th>
+                </tr>
+              </thead>
+              <tbody>
+                {parts.baseParts.map((p, i) => (
+                  <tr key={i}>
+                    <td>{p.kategori}</td>
+                    <td>{p.urun_tip}</td>
+                    <td>{p.birim}</td>
+                    <td>{p.fiyat} TL</td>
+                    <td>{p.toplam} TL</td>
+                  </tr>
+                ))}
+                {Object.entries(parts.optional).map(([key, items]) =>
+                  selectedExtras[key]
+                    ? items.map((p, i) => (
+                      <tr key={`${key}-${i}`}>
+                        <td>{p.kategori}</td>
+                        <td>{p.urun_tip}</td>
+                        <td>{p.birim}</td>
+                        <td>{p.fiyat} TL</td>
+                        <td>{p.toplam} TL</td>
+                      </tr>
+                    )) : null
+                )}
+                <tr>
+                  <td>{parts.labor.kategori}</td>
+                  <td>{parts.labor.urun_tip}</td>
+                  <td>{parts.labor.birim}</td>
+                  <td>{parts.labor.fiyat} TL</td>
+                  <td>{parts.labor.toplam} TL</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <h3>Toplam: {calculateTotal()} TL</h3>
+          </>
+        )}
+
+        <div className="extras">
+          {["balata", "disk", "silecek"].map(opt => (
+            <label key={opt}>
+              <input
+                type="checkbox"
+                checked={selectedExtras[opt]}
+                onChange={() => setSelectedExtras(prev => ({ ...prev, [opt]: !prev[opt] }))}
+              />
+              {opt.toUpperCase()}
+            </label>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default FiyatSorgulama;
