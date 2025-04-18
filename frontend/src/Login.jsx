@@ -3,14 +3,16 @@ import React, { useState } from "react";
 const Login = ({ setIsLoggedIn }) => {
   const [password, setPassword] = useState("");
 
-  const handleLogin = (e) => {
-    e.preventDefault();
-    if (password === "wq27t9mf") {
-      setIsLoggedIn(true);
-    } else {
-      alert("Hatalı şifre!");
-    }
-  };
+const handleLogin = (e) => {
+  e.preventDefault();
+  if (username === "admin" && password === "wq27t9mf") {
+    localStorage.setItem("isLoggedIn", "true");
+    setIsLoggedIn(true);
+    navigate("/admin");
+  } else {
+    alert("Hatalı kullanıcı adı veya şifre!");
+  }
+};
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen">
