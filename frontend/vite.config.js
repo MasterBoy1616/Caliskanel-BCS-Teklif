@@ -1,17 +1,16 @@
-// frontend/vite.config.js
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  base: "/", // deploy için gerekli
+  base: '/',
   server: {
     proxy: {
-      "/api": "http://localhost:8000", // local çalıştırırken backend bağlantısı
+      '/api': 'http://localhost:8000',
     },
   },
   build: {
-    outDir: "dist",
+    outDir: 'dist',
     emptyOutDir: true,
   },
 });
