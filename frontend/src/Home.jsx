@@ -1,7 +1,7 @@
 // frontend/src/Home.jsx
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React, { useState, useEffect } from "react";
 import { generatePdf } from "./pdfGenerator";
+import axios from "axios";
 
 const Home = () => {
   const [brands, setBrands] = useState([]);
@@ -14,6 +14,7 @@ const Home = () => {
     disk: false,
     silecek: false,
   });
+
   const [formData, setFormData] = useState({
     adSoyad: "",
     telefon: "",
@@ -33,17 +34,20 @@ const Home = () => {
 
   useEffect(() => {
     if (selectedBrand && selectedModel) {
-      axios.get(`/api/parts?brand=${selectedBrand}&model=${selectedModel}`).then((res) => setParts(res.data));
+      axios.get(`/api/parts?brand=${selectedBrand}&model=${selectedModel}`).then((res) => {
+        setParts(res.data);
+        axios.post("/api/log/fiyatbakma");
+      });
     }
   }, [selectedBrand, selectedModel]);
 
   const calculateTotal = () => {
     if (!parts) return 0;
     let total = 0;
-    parts.baseParts.forEach(p => total += p.toplam);
-    Object.keys(selectedExtras).forEach(key => {
+    parts.baseParts.forEach((p) => (total += p.toplam));
+    Object.keys(selectedExtras).forEach((key) => {
       if (selectedExtras[key]) {
-        parts.optional[key].forEach(p => total += p.toplam);
+        parts.optional[key].forEach((p) => (total += p.toplam));
       }
     });
     total += parts.labor.toplam;
@@ -51,34 +55,24 @@ const Home = () => {
   };
 
   const handleFormChange = (e) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleTeklifAl = (e) => {
-    e.preventDefault();
-    generatePdf(
-      {
-        ...formData,
-        arac: `${selectedBrand} ${selectedModel}`
-      },
-      calculateTotal(),
-      parts.baseParts,
-      Object.keys(selectedExtras).reduce((acc, key) => {
-        if (selectedExtras[key]) {
-          acc = acc.concat(parts.optional[key]);
-        }
-        return acc;
-      }, []),
-      parts.labor
-    );
+  const handleCreateOffer = () => {
+    if (!formData.adSoyad || !formData.telefon || !formData.plaka || !formData.randevuTarihi) {
+      alert("Lütfen tüm bilgileri doldurun!");
+      return;
+    }
+    generatePdf(formData, calculateTotal(), parts, selectedExtras, selectedBrand, selectedModel);
   };
 
   return (
     <div className="app-background">
       <div className="app-container">
-        <h1 className="text-3xl font-bold mb-6 text-center">Periyodik Bakım Fiyat ve Randevu</h1>
+        <h1 className="text-3xl font-bold mb-6 text-center">Periyodik Bakım Fiyat Sorgulama</h1>
 
-        <div className="selectors flex flex-wrap gap-4 mb-6 justify-center">
+        {/* Marka ve Model seçimi */}
+        <div className="selectors mb-6">
           <select
             value={selectedBrand}
             onChange={(e) => {
@@ -86,11 +80,12 @@ const Home = () => {
               setSelectedModel("");
               setParts(null);
             }}
-            className="border p-2 rounded"
           >
             <option value="">Marka Seç</option>
             {brands.map((b) => (
-              <option key={b} value={b}>{b}</option>
+              <option key={b} value={b}>
+                {b}
+              </option>
             ))}
           </select>
 
@@ -98,20 +93,22 @@ const Home = () => {
             value={selectedModel}
             onChange={(e) => setSelectedModel(e.target.value)}
             disabled={!selectedBrand}
-            className="border p-2 rounded"
           >
             <option value="">Model Seç</option>
             {models.map((m) => (
-              <option key={m} value={m}>{m}</option>
+              <option key={m} value={m}>
+                {m}
+              </option>
             ))}
           </select>
         </div>
 
+        {/* Parça Listesi */}
         {parts && (
           <>
             <table>
               <thead>
-                <tr className="bg-gray-100">
+                <tr>
                   <th>Kategori</th>
                   <th>Ürün</th>
                   <th>Birim</th>
@@ -152,32 +149,63 @@ const Home = () => {
               </tbody>
             </table>
 
-            <div className="text-xl font-bold text-center my-4">
-              Toplam: {calculateTotal()} TL
-            </div>
-
-            <div className="extras flex justify-center mb-6">
+            {/* Ekstralar */}
+            <div className="extras mt-6">
               {["balata", "disk", "silecek"].map((opt) => (
-                <label key={opt} className="flex items-center gap-2">
+                <label key={opt}>
                   <input
                     type="checkbox"
                     checked={selectedExtras[opt]}
                     onChange={() =>
                       setSelectedExtras((prev) => ({ ...prev, [opt]: !prev[opt] }))
                     }
-                  />
+                  />{" "}
                   {opt.toUpperCase()}
                 </label>
               ))}
             </div>
 
-            <form onSubmit={handleTeklifAl} className="flex flex-col items-center gap-4">
-              <input type="text" name="adSoyad" placeholder="Ad Soyad" value={formData.adSoyad} onChange={handleFormChange} className="border p-2 rounded w-80" required />
-              <input type="tel" name="telefon" placeholder="Telefon" value={formData.telefon} onChange={handleFormChange} className="border p-2 rounded w-80" required />
-              <input type="text" name="plaka" placeholder="Plaka" value={formData.plaka} onChange={handleFormChange} className="border p-2 rounded w-80" required />
-              <input type="datetime-local" name="randevuTarihi" value={formData.randevuTarihi} onChange={handleFormChange} className="border p-2 rounded w-80" required />
-              <button type="submit" className="button mt-4">📄 Teklifi PDF Olarak Al</button>
-            </form>
+            {/* Toplam */}
+            <div className="text-xl font-bold mt-6">
+              Toplam: {calculateTotal()} TL
+            </div>
+
+            {/* Randevu Formu */}
+            <div className="mt-8">
+              <h2 className="text-2xl font-semibold mb-4">Randevu Bilgileri</h2>
+              <div className="flex flex-col gap-3">
+                <input
+                  type="text"
+                  name="adSoyad"
+                  placeholder="Ad Soyad"
+                  value={formData.adSoyad}
+                  onChange={handleFormChange}
+                />
+                <input
+                  type="tel"
+                  name="telefon"
+                  placeholder="Telefon"
+                  value={formData.telefon}
+                  onChange={handleFormChange}
+                />
+                <input
+                  type="text"
+                  name="plaka"
+                  placeholder="Araç Plaka"
+                  value={formData.plaka}
+                  onChange={handleFormChange}
+                />
+                <input
+                  type="datetime-local"
+                  name="randevuTarihi"
+                  value={formData.randevuTarihi}
+                  onChange={handleFormChange}
+                />
+                <button className="button mt-4" onClick={handleCreateOffer}>
+                  📄 Teklifi PDF Olarak Al
+                </button>
+              </div>
+            </div>
           </>
         )}
       </div>
