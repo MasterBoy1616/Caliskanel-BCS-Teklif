@@ -1,46 +1,38 @@
 import React, { useState } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom";
 import Home from "./Home";
-import AdminPanel from "./AdminPanel";
+import Admin from "./Admin";
 import Login from "./Login";
 
-useEffect(() => {
-  const loggedIn = localStorage.getItem("isLoggedIn");
-  if (loggedIn === "true") {
-    setIsLoggedIn(true);
-  }
-}, []);
-
-const App = () => {
+function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   return (
-    <Router>
-      <div className="app-background">
-        <div className="app-container">
-          <nav className="flex justify-between mb-6">
-            <div className="flex gap-4">
-              <Link to="/">🏠 Anasayfa</Link>
-              {isLoggedIn && <Link to="/admin">🔧 Admin</Link>}
-            </div>
-            <div>
-              {isLoggedIn ? (
-                <button onClick={() => setIsLoggedIn(false)} className="button">Çıkış</button>
-              ) : (
-                <Link to="/login" className="button">Admin Giriş</Link>
-              )}
-            </div>
+    <div className="app-background">
+      <div className="app-container">
+        <Router>
+          <nav className="flex gap-6 mb-6">
+            <Link to="/" className="button">Anasayfa</Link>
+            {isLoggedIn ? (
+              <>
+                <Link to="/admin" className="button">Admin</Link>
+                <button onClick={() => setIsLoggedIn(false)} className="button">Çıkış Yap</button>
+              </>
+            ) : (
+              <Link to="/login" className="button">Admin Giriş</Link>
+            )}
           </nav>
+
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/admin" element={isLoggedIn ? <AdminPanel /> : <Navigate to="/login" />} />
             <Route path="/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
+            <Route path="/admin" element={isLoggedIn ? <Admin /> : <Navigate to="/login" />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
-        </div>
+        </Router>
       </div>
-    </Router>
+    </div>
   );
-};
+}
 
 export default App;
