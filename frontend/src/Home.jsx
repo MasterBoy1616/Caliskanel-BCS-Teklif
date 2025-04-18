@@ -1,5 +1,3 @@
-// frontend/src/Home.jsx
-
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
@@ -27,7 +25,15 @@ const Home = () => {
 
   useEffect(() => {
     if (selectedBrand && selectedModel) {
-      axios.get(`/api/parts?brand=${selectedBrand}&model=${selectedModel}`).then((res) => setParts(res.data));
+      axios.get(`/api/parts?brand=${selectedBrand}&model=${selectedModel}`).then((res) => {
+        setParts(res.data);
+
+        // === BURASI YENİ EKLENDİ ===
+        axios.post("/api/log/fiyatbakma", null, {
+          params: { marka: selectedBrand, model: selectedModel }
+        }).catch((err) => console.error("Fiyat bakma log hatası:", err));
+        // === BURAYA KADAR ===
+      });
     }
   }, [selectedBrand, selectedModel]);
 
