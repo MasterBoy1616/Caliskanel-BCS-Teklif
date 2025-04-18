@@ -1,23 +1,26 @@
-import React, { useState } from "react";
+// frontend/src/App.jsx
+import React from "react";
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom";
-import AdminPanel from "./Admin";
 import Home from "./Home";
-import Randevu from "./Randevu";
 import Login from "./Login";
+import AdminPanel from "./AdminPanel";
 
 const App = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
 
   return (
     <Router>
       <div className="min-h-screen flex flex-col">
-        <nav className="bg-gray-800 p-4 flex justify-center gap-8 text-white">
+        {/* Navbar */}
+        <nav className="bg-gray-800 text-white p-4 flex justify-center gap-8">
           <Link to="/">Anasayfa</Link>
-          <Link to="/randevu">Randevu Al</Link>
           {isLoggedIn ? (
             <>
               <Link to="/admin">Admin</Link>
-              <button onClick={() => setIsLoggedIn(false)} className="bg-red-500 px-3 py-1 rounded">
+              <button
+                onClick={() => setIsLoggedIn(false)}
+                className="bg-red-500 hover:bg-red-700 px-3 py-1 rounded"
+              >
                 Çıkış
               </button>
             </>
@@ -26,10 +29,10 @@ const App = () => {
           )}
         </nav>
 
+        {/* Sayfa İçeriği */}
         <div className="flex-1">
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/randevu" element={<Randevu />} />
             <Route path="/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
             <Route
               path="/admin"
