@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 
 const AdminPanel = () => {
@@ -7,17 +7,11 @@ const AdminPanel = () => {
   const [selectedBrand, setSelectedBrand] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
   const [parts, setParts] = useState(null);
-  const [fiyatBakmaCount, setFiyatBakmaCount] = useState(0);
-  const [randevuCount, setRandevuCount] = useState(0);
+  const [percentage, setPercentage] = useState(0);
   const [message, setMessage] = useState("");
-
-  const [yuzde, setYuzde] = useState(0);
-  const [islem, setIslem] = useState("arttir"); // arttir veya azalt
 
   useEffect(() => {
     axios.get("/api/brands").then((res) => setBrands(res.data));
-    axios.get("/api/log/fiyatbakmasayisi").then((res) => setFiyatBakmaCount(res.data.adet));
-    axios.get("/api/log/randevusayisi").then((res) => setRandevuCount(res.data.adet));
   }, []);
 
   useEffect(() => {
@@ -28,170 +22,157 @@ const AdminPanel = () => {
 
   useEffect(() => {
     if (selectedBrand && selectedModel) {
-      axios.get(`/api/parts?brand=${selectedBrand}&model=${selectedModel}`)
-        .then((res) => {
-          const updated = {
-            ...res.data,
-            baseParts: res.data.baseParts.map(p => ({ ...p })),
-            optional: Object.fromEntries(
-              Object.entries(res.data.optional).map(([k, arr]) => [
-                k,
-                arr.map(p => ({ ...p }))
-              ])
-            ),
-            labor: { ...res.data.labor }
-          };
-          setParts(updated);
-        });
+      axios.get(`/api/parts?brand=${selectedBrand}&model=${selectedModel}`).then((res) => {
+        setParts(res.data);
+      });
     }
   }, [selectedBrand, selectedModel]);
 
-  const handleFiyatChange = (section, index, value, key) => {
+  const handlePriceChange = (type, index, key, value) => {
     setParts(prev => {
       const updated = { ...prev };
-      if (section === "baseParts") {
+      if (type === "baseParts") {
         updated.baseParts[index][key] = parseFloat(value) || 0;
-      } else if (section === "optional") {
-        const [k, i] = index.split("-");
-        updated.optional[k][i][key] = parseFloat(value) || 0;
-      } else if (section === "labor") {
+        updated.baseParts[index].toplam = updated.baseParts[index].fiyat * updated.baseParts[index].birim;
+      } else if (type === "optional") {
+        updated.optional[key][index].fiyat = parseFloat(value) || 0;
+        updated.optional[key][index].toplam = updated.optional[key][index].fiyat * updated.optional[key][index].birim;
+      } else if (type === "labor") {
         updated.labor[key] = parseFloat(value) || 0;
+        updated.labor.toplam = updated.labor.fiyat * updated.labor.birim;
       }
       return updated;
     });
   };
 
-  const handleTopluGuncelle = () => {
+  const handleApplyPercentage = () => {
     if (!parts) return;
+    const rate = (percentage / 100);
+
+    const updatePrice = (p) => {
+      p.fiyat = Math.round(p.fiyat * (1 + rate));
+      p.toplam = Math.round(p.fiyat * p.birim);
+    };
+
     setParts(prev => {
-      const katsayi = 1 + (parseFloat(yuzde) / 100) * (islem === "arttir" ? 1 : -1);
       const updated = { ...prev };
-
-      updated.baseParts = updated.baseParts.map(p => ({
-        ...p,
-        fiyat: Math.round(p.fiyat * katsayi),
-        toplam: Math.round(p.toplam * katsayi)
-      }));
-
-      for (const key in updated.optional) {
-        updated.optional[key] = updated.optional[key].map(p => ({
-          ...p,
-          fiyat: Math.round(p.fiyat * katsayi),
-          toplam: Math.round(p.toplam * katsayi)
-        }));
-      }
-
-      updated.labor.fiyat = Math.round(updated.labor.fiyat * katsayi);
-      updated.labor.toplam = Math.round(updated.labor.toplam * katsayi);
-
+      updated.baseParts.forEach(updatePrice);
+      Object.keys(updated.optional).forEach(key => {
+        updated.optional[key].forEach(updatePrice);
+      });
+      updatePrice(updated.labor);
       return updated;
     });
   };
 
-  const handleKaydet = () => {
-    axios.post("/api/update-prices", parts)
-      .then(() => setMessage("Fiyatlar başarıyla güncellendi ✅"))
-      .catch(() => setMessage("Fiyat kaydederken hata oluştu ❌"));
+  const handleSave = async () => {
+    try {
+      await axios.post("/api/save-prices", parts);
+      setMessage("✔️ Fiyatlar başarıyla kaydedildi!");
+    } catch (error) {
+      console.error(error);
+      setMessage("❌ Fiyat kaydederken hata oluştu.");
+    }
+    setTimeout(() => setMessage(""), 4000);
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Admin Panel - Fiyat Takibi</h2>
+    <div className="app-container">
+      <h1 className="text-2xl font-bold mb-4">Admin Panel - Fiyat Güncelle</h1>
 
-      <div className="flex gap-4 mb-6">
-        <select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)} className="border p-2 rounded">
+      <div className="selectors">
+        <select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)}>
           <option value="">Marka Seç</option>
-          {brands.map((b, i) => <option key={i} value={b}>{b}</option>)}
+          {brands.map(b => <option key={b} value={b}>{b}</option>)}
         </select>
 
-        <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} className="border p-2 rounded" disabled={!selectedBrand}>
+        <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} disabled={!selectedBrand}>
           <option value="">Model Seç</option>
-          {models.map((m, i) => <option key={i} value={m}>{m}</option>)}
+          {models.map(m => <option key={m} value={m}>{m}</option>)}
         </select>
       </div>
 
-      {/* Yüzde İşlemleri */}
       {parts && (
-        <div className="flex gap-4 items-center mb-6">
-          <input
-            type="number"
-            value={yuzde}
-            onChange={(e) => setYuzde(e.target.value)}
-            className="border p-2 rounded w-24"
-            placeholder="% oran"
-          />
-          <select value={islem} onChange={(e) => setIslem(e.target.value)} className="border p-2 rounded">
-            <option value="arttir">Yüzde Arttır</option>
-            <option value="azalt">Yüzde Azalt</option>
-          </select>
-          <button onClick={handleTopluGuncelle} className="bg-blue-600 text-white p-2 rounded">
-            Toplu Güncelle
-          </button>
-          <button onClick={handleKaydet} className="bg-green-600 text-white p-2 rounded">
-            Kaydet
-          </button>
-        </div>
-      )}
+        <>
+          <div className="mb-4">
+            <input
+              type="number"
+              placeholder="% Değişim"
+              value={percentage}
+              onChange={(e) => setPercentage(e.target.value)}
+              className="border p-2 mr-2 rounded"
+            />
+            <button className="button" onClick={handleApplyPercentage}>Toplu Yüzde Uygula</button>
+          </div>
 
-      {/* Mesaj Alanı */}
-      {message && (
-        <div className="bg-yellow-100 p-2 rounded mb-4">{message}</div>
-      )}
-
-      {/* Fiyat Listesi */}
-      {parts && (
-        <div className="overflow-x-auto">
-          <table className="min-w-full table-auto border">
+          <table>
             <thead>
-              <tr className="bg-gray-200">
-                <th className="p-2 border">Kategori</th>
-                <th className="p-2 border">Ürün/TİP</th>
-                <th className="p-2 border">Birim</th>
-                <th className="p-2 border">Fiyat (TL)</th>
-                <th className="p-2 border">Toplam (TL)</th>
+              <tr>
+                <th>Kategori</th>
+                <th>Ürün</th>
+                <th>Birim</th>
+                <th>Fiyat</th>
+                <th>Toplam</th>
               </tr>
             </thead>
             <tbody>
               {parts.baseParts.map((p, i) => (
                 <tr key={i}>
-                  <td className="p-2 border">{p.kategori}</td>
-                  <td className="p-2 border">{p.urun_tip}</td>
-                  <td className="p-2 border">{p.birim}</td>
-                  <td className="p-2 border">
-                    <input type="number" value={p.fiyat} onChange={(e) => handleFiyatChange("baseParts", i, e.target.value, "fiyat")} className="w-20 border rounded" />
+                  <td>{p.kategori}</td>
+                  <td>{p.urun_tip}</td>
+                  <td>{p.birim}</td>
+                  <td>
+                    <input
+                      type="number"
+                      value={p.fiyat}
+                      onChange={(e) => handlePriceChange("baseParts", i, "fiyat", e.target.value)}
+                      className="border p-1 w-24 rounded"
+                    />
                   </td>
-                  <td className="p-2 border">
-                    <input type="number" value={p.toplam} onChange={(e) => handleFiyatChange("baseParts", i, e.target.value, "toplam")} className="w-24 border rounded" />
-                  </td>
+                  <td>{p.toplam} TL</td>
                 </tr>
               ))}
-              {Object.entries(parts.optional).map(([key, arr]) => arr.map((p, i) => (
-                <tr key={`${key}-${i}`}>
-                  <td className="p-2 border">{p.kategori}</td>
-                  <td className="p-2 border">{p.urun_tip}</td>
-                  <td className="p-2 border">{p.birim}</td>
-                  <td className="p-2 border">
-                    <input type="number" value={p.fiyat} onChange={(e) => handleFiyatChange("optional", `${key}-${i}`, e.target.value, "fiyat")} className="w-20 border rounded" />
-                  </td>
-                  <td className="p-2 border">
-                    <input type="number" value={p.toplam} onChange={(e) => handleFiyatChange("optional", `${key}-${i}`, e.target.value, "toplam")} className="w-24 border rounded" />
-                  </td>
-                </tr>
-              )))}
-              <tr className="font-semibold">
-                <td className="p-2 border">{parts.labor.kategori}</td>
-                <td className="p-2 border">{parts.labor.urun_tip}</td>
-                <td className="p-2 border">{parts.labor.birim}</td>
-                <td className="p-2 border">
-                  <input type="number" value={parts.labor.fiyat} onChange={(e) => handleFiyatChange("labor", "", e.target.value, "fiyat")} className="w-20 border rounded" />
+              {Object.keys(parts.optional).flatMap((key) =>
+                parts.optional[key].map((p, i) => (
+                  <tr key={`${key}-${i}`}>
+                    <td>{p.kategori}</td>
+                    <td>{p.urun_tip}</td>
+                    <td>{p.birim}</td>
+                    <td>
+                      <input
+                        type="number"
+                        value={p.fiyat}
+                        onChange={(e) => handlePriceChange("optional", i, key, e.target.value)}
+                        className="border p-1 w-24 rounded"
+                      />
+                    </td>
+                    <td>{p.toplam} TL</td>
+                  </tr>
+                ))
+              )}
+              <tr className="font-bold">
+                <td>{parts.labor.kategori}</td>
+                <td>{parts.labor.urun_tip}</td>
+                <td>{parts.labor.birim}</td>
+                <td>
+                  <input
+                    type="number"
+                    value={parts.labor.fiyat}
+                    onChange={(e) => handlePriceChange("labor", null, "fiyat", e.target.value)}
+                    className="border p-1 w-24 rounded"
+                  />
                 </td>
-                <td className="p-2 border">
-                  <input type="number" value={parts.labor.toplam} onChange={(e) => handleFiyatChange("labor", "", e.target.value, "toplam")} className="w-24 border rounded" />
-                </td>
+                <td>{parts.labor.toplam} TL</td>
               </tr>
             </tbody>
           </table>
-        </div>
+
+          <div className="mt-6 flex gap-4">
+            <button className="button" onClick={handleSave}>Kaydet</button>
+          </div>
+
+          {message && <div className="mt-4 text-green-600">{message}</div>}
+        </>
       )}
     </div>
   );
