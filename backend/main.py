@@ -90,6 +90,17 @@ def get_parts(brand: str, model: str):
         "labor": labor
     }
 
+# Fiyatları güncelleme (Admin panelinden)
+@app.post("/api/save-prices")
+async def save_prices(request: Request):
+    data = await request.json()
+    save_path = "backend/logs/guncel_fiyatlar.json"
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    with open(save_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    return {"success": True, "message": "Fiyatlar kaydedildi"}
+
+# Fiyat bakma ve randevu log işlemleri
 @app.get("/api/log/fiyatbakmasayisi")
 def get_fiyat_bakma_sayisi():
     if os.path.exists(FIYAT_LOG_PATH):
@@ -106,25 +117,43 @@ def get_randevu_sayisi():
             return {"adet": len(logs)}
     return {"adet": 0}
 
-@app.post("/api/randevu")
-async def create_randevu(request: Request):
-    form = await request.json()
-    if not os.path.exists("backend/logs"):
-        os.makedirs("backend/logs")
-    if not os.path.exists(RANDEVU_LOG_PATH):
-        with open(RANDEVU_LOG_PATH, "w", encoding="utf-8") as f:
-            json.dump([], f)
+@app.get("/api/randevular")
+def get_randevular():
+    if os.path.exists(RANDEVU_LOG_PATH):
+        with open(RANDEVU_LOG_PATH, "r") as f:
+            randevular = json.load(f)
+            randevular.sort(key=lambda x: x.get("randevuTarihi", ""), reverse=True)
+            return randevular
+    return []
 
-    with open(RANDEVU_LOG_PATH, "r+", encoding="utf-8") as f:
-        logs = json.load(f)
-        logs.append(form)
-        f.seek(0)
-        json.dump(logs, f, indent=2, ensure_ascii=False)
-        f.truncate()
+@app.patch("/api/randevular/update")
+def update_randevu(index: int = Body(...), durum: str = Body(...)):
+    if os.path.exists(RANDEVU_LOG_PATH):
+        with open(RANDEVU_LOG_PATH, "r+") as f:
+            logs = json.load(f)
+            if 0 <= index < len(logs):
+                logs[index]["durum"] = durum
+                f.seek(0)
+                json.dump(logs, f, indent=2, ensure_ascii=False)
+                f.truncate()
+                return {"success": True}
+    return {"success": False}
 
-    return {"success": True}
+@app.delete("/api/randevular/delete")
+def delete_randevu(index: int = Body(...)):
+    if os.path.exists(RANDEVU_LOG_PATH):
+        with open(RANDEVU_LOG_PATH, "r+") as f:
+            logs = json.load(f)
+            if 0 <= index < len(logs):
+                logs.pop(index)
+                f.seek(0)
+                json.dump(logs, f, indent=2, ensure_ascii=False)
+                f.truncate()
+                return {"success": True}
+    return {"success": False}
 
-@app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
+# Frontend yayınlama (HATALI DEĞİL ARTIK BURASI)
+app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
 
 @app.get("/{full_path:path}")
 async def serve_spa(full_path: str):
