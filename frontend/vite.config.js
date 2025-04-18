@@ -3,10 +3,10 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  base: "/",  // Bu satır çok önemli! CSS ve JS için
+  base: "/", // çok önemli!
   server: {
     proxy: {
-      '/api': 'http://localhost:8000', 
+      '/api': 'http://localhost:8000', // local geliştirme için proxy
     }
   },
   build: {
