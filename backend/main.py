@@ -5,6 +5,8 @@ import pandas as pd
 import os
 import json
 from datetime import datetime
+from fastapi import Request
+
 
 app = FastAPI()
 
@@ -43,6 +45,15 @@ def parse_row(row):
 def get_brands():
     df = sheets["02_TavsiyeEdilenBakımListesi"]
     return sorted(df["MARKA"].dropna().unique().tolist())
+    
+@app.post("/api/update-prices")
+async def update_prices(request: Request):
+    data = await request.json()
+    if not os.path.exists("backend/logs"):
+        os.makedirs("backend/logs")
+    with open("backend/logs/guncel_fiyatlar.json", "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    return {"success": True}
 
 @app.get("/api/models")
 def get_models(brand: str):
