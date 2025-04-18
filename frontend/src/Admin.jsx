@@ -17,6 +17,8 @@ const AdminPanel = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState({ start: "", end: "" });
   const [selectedIndexes, setSelectedIndexes] = useState([]);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewType, setPreviewType] = useState(""); // excel veya pdf
 
   useEffect(() => {
     axios.get("/api/brands").then((res) => setBrands(res.data));
@@ -39,7 +41,6 @@ const AdminPanel = () => {
         .then((res) => setParts(res.data));
     }
   }, [selectedBrand, selectedModel]);
-
   const toggleSelect = (index) => {
     if (selectedIndexes.includes(index)) {
       setSelectedIndexes(selectedIndexes.filter((i) => i !== index));
@@ -79,6 +80,26 @@ const AdminPanel = () => {
     return "text-gray-600 font-bold";
   };
 
+  const filteredRandevular = randevular.filter(r => {
+    const term = searchTerm.toLowerCase();
+    const matchesSearch = (
+      r.adSoyad.toLowerCase().includes(term) ||
+      r.telefon.toLowerCase().includes(term) ||
+      r.plaka.toLowerCase().includes(term) ||
+      r.arac.toLowerCase().includes(term)
+    );
+    const dateOk =
+      (!dateFilter.start || r.randevuTarihi >= dateFilter.start) &&
+      (!dateFilter.end || r.randevuTarihi <= dateFilter.end);
+
+    return matchesSearch && dateOk;
+  });
+
+  const openPreview = (type) => {
+    setPreviewType(type);
+    setShowPreview(true);
+  };
+
   const exportExcel = () => {
     const ws = XLSX.utils.json_to_sheet(filteredRandevular);
     const wb = XLSX.utils.book_new();
@@ -98,22 +119,6 @@ const AdminPanel = () => {
     });
     doc.save("randevular.pdf");
   };
-
-  const filteredRandevular = randevular.filter(r => {
-    const term = searchTerm.toLowerCase();
-    const matchesSearch = (
-      r.adSoyad.toLowerCase().includes(term) ||
-      r.telefon.toLowerCase().includes(term) ||
-      r.plaka.toLowerCase().includes(term) ||
-      r.arac.toLowerCase().includes(term)
-    );
-    const dateOk =
-      (!dateFilter.start || r.randevuTarihi >= dateFilter.start) &&
-      (!dateFilter.end || r.randevuTarihi <= dateFilter.end);
-
-    return matchesSearch && dateOk;
-  });
-
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <h2 className="text-2xl font-bold mb-4">Admin Panel - Fiyat Takibi ve Randevu Yönetimi</h2>
@@ -164,10 +169,10 @@ const AdminPanel = () => {
           onChange={(e) => setDateFilter(prev => ({ ...prev, end: e.target.value }))}
           className="border p-2 rounded"
         />
-        <button onClick={exportExcel} className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded">
+        <button onClick={() => openPreview("excel")} className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded">
           Excel İndir
         </button>
-        <button onClick={exportPDF} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded">
+        <button onClick={() => openPreview("pdf")} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded">
           PDF İndir
         </button>
       </div>
@@ -226,6 +231,64 @@ const AdminPanel = () => {
           </tbody>
         </table>
       </div>
+
+      {/* ÖNİZLEME MODAL */}
+      {showPreview && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-3xl animate-fade-in">
+            <h2 className="text-xl font-bold mb-4">
+              Seçilen Randevular – {previewType.toUpperCase()} Önizleme
+            </h2>
+
+            <div className="overflow-x-auto max-h-96 overflow-y-auto mb-6">
+              <table className="min-w-full table-auto border">
+                <thead>
+                  <tr className="bg-gray-200">
+                    <th className="p-2 border">Ad Soyad</th>
+                    <th className="p-2 border">Telefon</th>
+                    <th className="p-2 border">Plaka</th>
+                    <th className="p-2 border">Araç</th>
+                    <th className="p-2 border">Randevu Tarihi</th>
+                    <th className="p-2 border">Durum</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredRandevular.map((r, i) => (
+                    <tr key={i}>
+                      <td className="p-2 border">{r.adSoyad}</td>
+                      <td className="p-2 border">{r.telefon}</td>
+                      <td className="p-2 border">{r.plaka}</td>
+                      <td className="p-2 border">{r.arac}</td>
+                      <td className="p-2 border">{r.randevuTarihi.replace("T", " ")}</td>
+                      <td className="p-2 border">{r.durum}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => {
+                  if (previewType === "excel") exportExcel();
+                  if (previewType === "pdf") exportPDF();
+                  setShowPreview(false);
+                }}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+              >
+                İndir
+              </button>
+
+              <button
+                onClick={() => setShowPreview(false)}
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded"
+              >
+                İptal Et
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
