@@ -2,9 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-const [fiyatBakmaCount, setFiyatBakmaCount] = useState(0);
-const [randevuCount, setRandevuCount] = useState(0);
-
 
 const AdminPanel = () => {
   const [brands, setBrands] = useState([]);
@@ -12,9 +9,15 @@ const AdminPanel = () => {
   const [selectedBrand, setSelectedBrand] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
   const [parts, setParts] = useState(null);
+  const [fiyatBakmaCount, setFiyatBakmaCount] = useState(0);
+  const [randevuCount, setRandevuCount] = useState(0);
+  const [randevular, setRandevular] = useState([]);
 
   useEffect(() => {
     axios.get("/api/brands").then((res) => setBrands(res.data));
+    axios.get("/api/log/fiyatbakmasayisi").then((res) => setFiyatBakmaCount(res.data.adet));
+    axios.get("/api/log/randevusayisi").then((res) => setRandevuCount(res.data.adet));
+    axios.get("/api/randevular").then((res) => setRandevular(res.data));
   }, []);
 
   useEffect(() => {
@@ -29,11 +32,6 @@ const AdminPanel = () => {
         .then((res) => setParts(res.data));
     }
   }, [selectedBrand, selectedModel]);
-useEffect(() => {
-  axios.get("/api/brands").then((res) => setBrands(res.data));
-  axios.get("/api/log/fiyatbakmasayisi").then((res) => setFiyatBakmaCount(res.data.adet));
-  axios.get("/api/log/randevusayisi").then((res) => setRandevuCount(res.data.adet));
-}, []);
 
   const calculateTotal = () => {
     if (!parts) return 0;
@@ -50,6 +48,7 @@ useEffect(() => {
     <div className="p-6 max-w-5xl mx-auto">
       <h2 className="text-2xl font-bold mb-4">Admin Panel - Fiyat Takibi</h2>
 
+      {/* Seçim Alanı */}
       <div className="flex gap-4 mb-6">
         <select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)} className="border p-2 rounded">
           <option value="">Marka Seç</option>
@@ -61,17 +60,20 @@ useEffect(() => {
           {models.map((m, i) => <option key={i} value={m}>{m}</option>)}
         </select>
       </div>
-<div className="flex gap-8 mb-6">
-  <div className="bg-blue-100 p-4 rounded shadow text-center">
-    <h3 className="text-lg font-bold">Fiyat Sorgulama</h3>
-    <p className="text-2xl">{fiyatBakmaCount}</p>
-  </div>
-  <div className="bg-green-100 p-4 rounded shadow text-center">
-    <h3 className="text-lg font-bold">Randevu Alımı</h3>
-    <p className="text-2xl">{randevuCount}</p>
-  </div>
-</div>
 
+      {/* Sayaçlar */}
+      <div className="flex gap-8 mb-6">
+        <div className="bg-blue-100 p-4 rounded shadow text-center">
+          <h3 className="text-lg font-bold">Fiyat Sorgulama</h3>
+          <p className="text-2xl">{fiyatBakmaCount}</p>
+        </div>
+        <div className="bg-green-100 p-4 rounded shadow text-center">
+          <h3 className="text-lg font-bold">Randevu Alımı</h3>
+          <p className="text-2xl">{randevuCount}</p>
+        </div>
+      </div>
+
+      {/* Fiyat Listesi */}
       {parts && (
         <div className="overflow-x-auto">
           <table className="min-w-full table-auto border">
@@ -118,6 +120,40 @@ useEffect(() => {
           <h3 className="mt-6 text-lg font-bold">Toplam: {calculateTotal()} TL</h3>
         </div>
       )}
+
+      {/* Randevu Listesi */}
+      <div className="mt-10">
+        <h2 className="text-2xl font-bold mb-4">Gelen Randevular</h2>
+        {randevular.length === 0 ? (
+          <p>Henüz randevu alınmamış.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full table-auto border">
+              <thead>
+                <tr className="bg-gray-200">
+                  <th className="p-2 border">Ad Soyad</th>
+                  <th className="p-2 border">Telefon</th>
+                  <th className="p-2 border">Plaka</th>
+                  <th className="p-2 border">Araç</th>
+                  <th className="p-2 border">Randevu Tarihi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {randevular.map((r, i) => (
+                  <tr key={i}>
+                    <td className="p-2 border">{r.adSoyad}</td>
+                    <td className="p-2 border">{r.telefon}</td>
+                    <td className="p-2 border">{r.plaka}</td>
+                    <td className="p-2 border">{r.arac}</td>
+                    <td className="p-2 border">{r.randevuTarihi.replace("T", " ")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
     </div>
   );
 };
