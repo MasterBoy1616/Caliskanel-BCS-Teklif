@@ -1,67 +1,47 @@
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 
-export const generatePdf = (formData, fiyatBilgisi, parts, optionalParts) => {
+export const generatePdf = (randevuData) => {
+  const { adSoyad, telefon, plaka, arac, randevuTarihi, parts, optionalParts, labor } = randevuData;
+
   const doc = new jsPDF();
 
-  // Başlık
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
-  doc.text("Çalışkanel Servis - Teklif Formu", 20, 20);
+  doc.text("Çalışkanel Bosch Car Service", 105, 15, { align: "center" });
 
-  // Müşteri Bilgileri
   doc.setFontSize(12);
-  doc.text(`Ad Soyad: ${formData.adSoyad}`, 20, 40);
-  doc.text(`Telefon: ${formData.telefon}`, 20, 50);
-  doc.text(`Plaka: ${formData.plaka}`, 20, 60);
-  doc.text(`Araç: ${formData.arac}`, 20, 70);
-  doc.text(`Randevu Tarihi: ${formData.randevuTarihi}`, 20, 80);
+  doc.text(`Ad Soyad: ${adSoyad}`, 14, 30);
+  doc.text(`Telefon: ${telefon}`, 14, 38);
+  doc.text(`Plaka: ${plaka}`, 14, 46);
+  doc.text(`Araç: ${arac}`, 14, 54);
+  doc.text(`Randevu Tarihi: ${randevuTarihi.replace("T", " ")}`, 14, 62);
 
-  // Parça Listesi Başlık
-  doc.setFontSize(14);
-  doc.text("Periyodik Bakım Parçaları", 20, 95);
+  const allParts = [...parts, ...optionalParts, labor];
 
-  // Parça Tablosu
-  const partRows = parts.map((p) => [
-    p.kategori,
-    p.urun_tip,
-    p.birim,
-    `${p.fiyat} TL`,
-    `${p.toplam} TL`
+  const tableData = allParts.map((item) => [
+    item.kategori,
+    item.urun_tip,
+    item.birim,
+    `${item.fiyat} TL`,
+    `${item.toplam} TL`
   ]);
 
-  doc.autoTable({
+  autoTable(doc, {
+    startY: 70,
     head: [["Kategori", "Ürün", "Birim", "Fiyat", "Toplam"]],
-    body: partRows,
-    startY: 100,
+    body: tableData,
+    styles: { font: "helvetica", fontStyle: "normal" },
   });
 
-  // Eğer opsiyonel parçalar varsa onları da ekle
-  if (optionalParts.length > 0) {
-    const optStartY = doc.previousAutoTable.finalY + 10;
+  const totalPrice = allParts.reduce((sum, item) => sum + (item.toplam || 0), 0);
 
-    doc.setFontSize(14);
-    doc.text("Ekstra Parçalar", 20, optStartY);
+  doc.setFontSize(14);
+  doc.text(`Toplam Tutar: ${totalPrice} TL (KDV Dahil)`, 14, doc.lastAutoTable.finalY + 20);
 
-    const optionalRows = optionalParts.map((p) => [
-      p.kategori,
-      p.urun_tip,
-      p.birim,
-      `${p.fiyat} TL`,
-      `${p.toplam} TL`
-    ]);
+  // Logoyu eklemek istersen:
+  // const imgData = "data:image/png;base64,...."; // Base64 logo verisi buraya
+  // doc.addImage(imgData, 'PNG', 150, 10, 40, 20);
 
-    doc.autoTable({
-      head: [["Kategori", "Ürün", "Birim", "Fiyat", "Toplam"]],
-      body: optionalRows,
-      startY: optStartY + 5,
-    });
-  }
-
-  // Toplam Fiyat
-  const totalY = doc.previousAutoTable.finalY + 10;
-  doc.setFontSize(16);
-  doc.text(`Toplam Fiyat (KDV Dahil): ${fiyatBilgisi} TL`, 20, totalY);
-
-  // PDF'i kaydet
-  doc.save(`teklif_${formData.plaka || "randevu"}.pdf`);
+  doc.save(`teklif_${plaka}.pdf`);
 };
