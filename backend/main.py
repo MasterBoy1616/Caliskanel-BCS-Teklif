@@ -1,12 +1,10 @@
-from fastapi import FastAPI, Body
+from fastapi import FastAPI, Body, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import pandas as pd
 import os
 import json
 from datetime import datetime
-from fastapi import Request
-
 
 app = FastAPI()
 
@@ -17,10 +15,12 @@ sheets = pd.read_excel(excel_path, sheet_name=None)
 # Log dosyası path'leri
 FIYAT_LOG_PATH = "backend/logs/fiyat_bakma_logu.json"
 RANDEVU_LOG_PATH = "backend/logs/randevu_logu.json"
+GUNCEL_FIYAT_PATH = "backend/logs/guncel_fiyatlar.json"
 
 def parse_miktar(birim_str):
     try:
-        if pd.isna(birim_str): return 1
+        if pd.isna(birim_str):
+            return 1
         value = str(birim_str).split()[0].replace(",", ".")
         return float(value)
     except:
@@ -45,15 +45,6 @@ def parse_row(row):
 def get_brands():
     df = sheets["02_TavsiyeEdilenBakımListesi"]
     return sorted(df["MARKA"].dropna().unique().tolist())
-    
-@app.post("/api/update-prices")
-async def update_prices(request: Request):
-    data = await request.json()
-    if not os.path.exists("backend/logs"):
-        os.makedirs("backend/logs")
-    with open("backend/logs/guncel_fiyatlar.json", "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    return {"success": True}
 
 @app.get("/api/models")
 def get_models(brand: str):
@@ -131,7 +122,7 @@ def get_randevular():
     return []
 
 @app.patch("/api/randevular/update")
-def update_randevu(index: int = Body(...), durum: str = Body(...)):
+async def update_randevu(index: int = Body(...), durum: str = Body(...)):
     if os.path.exists(RANDEVU_LOG_PATH):
         with open(RANDEVU_LOG_PATH, "r+") as f:
             logs = json.load(f)
@@ -144,7 +135,7 @@ def update_randevu(index: int = Body(...), durum: str = Body(...)):
     return {"success": False}
 
 @app.delete("/api/randevular/delete")
-def delete_randevu(index: int = Body(...)):
+async def delete_randevu(index: int = Body(...)):
     if os.path.exists(RANDEVU_LOG_PATH):
         with open(RANDEVU_LOG_PATH, "r+") as f:
             logs = json.load(f)
@@ -156,25 +147,19 @@ def delete_randevu(index: int = Body(...)):
                 return {"success": True}
     return {"success": False}
 
+# Fiyat güncelleme yönetimi
+
+@app.post("/api/save-prices")
+async def save_prices(request: Request):
+    data = await request.json()
+    os.makedirs(os.path.dirname(GUNCEL_FIYAT_PATH), exist_ok=True)
+    with open(GUNCEL_FIYAT_PATH, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    return {"success": True, "message": "Fiyatlar kaydedildi"}
+
 # Frontend yayınlama
 app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
 
 @app.get("/{full_path:path}")
 async def serve_spa(full_path: str):
     return FileResponse("frontend/dist/index.html")
-
-from fastapi import Request
-
-# Güncellenen fiyatları kaydet
-@app.post("/api/save-prices")
-async def save_prices(request: Request):
-    data = await request.json()
-
-    save_path = "backend/logs/guncel_fiyatlar.json"
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-
-    with open(save_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-
-    return {"success": True, "message": "Fiyatlar kaydedildi"}
-
