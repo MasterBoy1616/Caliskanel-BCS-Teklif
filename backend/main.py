@@ -65,3 +65,22 @@ def get_parts(brand: str, model: str):
         if iscilik_anahtar:
             match_iscilik = df[(df["KATEGORİ"] == "İşçilik") & (df["ÜRÜN/TİP"].str.contains(iscilik_anahtar, na=False))]
             if not
+
+            # Toplam fiyat bakma log sayısını döner
+@app.get("/api/log/fiyatbakmasayisi")
+def get_fiyat_bakma_sayisi():
+    if os.path.exists(FIYAT_LOG_PATH):
+        with open(FIYAT_LOG_PATH, "r") as f:
+            logs = json.load(f)
+            return {"adet": len(logs)}
+    return {"adet": 0}
+
+# Toplam randevu log sayısını döner
+@app.get("/api/log/randevusayisi")
+def get_randevu_sayisi():
+    if os.path.exists(RANDEVU_LOG_PATH):
+        with open(RANDEVU_LOG_PATH, "r") as f:
+            logs = json.load(f)
+            return {"adet": len(logs)}
+    return {"adet": 0}
+
