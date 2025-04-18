@@ -2,9 +2,13 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import pandas as pd
+import os
+import json
+from datetime import datetime
 
 app = FastAPI()
 
+# Excel dosyası
 excel_path = "backend/yeni_bosch_fiyatlari.xlsm"
 sheets = pd.read_excel(excel_path, sheet_name=None)
 
@@ -60,32 +64,4 @@ def get_parts(brand: str, model: str):
             parts.append(parse_row(match_part.iloc[0]))
         if iscilik_anahtar:
             match_iscilik = df[(df["KATEGORİ"] == "İşçilik") & (df["ÜRÜN/TİP"].str.contains(iscilik_anahtar, na=False))]
-            if not match_iscilik.empty:
-                parts.append(parse_row(match_iscilik.iloc[0]))
-        return parts
-
-    optional = {
-        "balata": get_optional_parts("ÖnFrenBalata", "Balata"),
-        "disk": get_optional_parts("ÖnFrenDisk", "Disk"),
-        "silecek": get_optional_parts("Silecek")
-    }
-
-    labor_match = df[(df["KATEGORİ"] == "İşçilik") & (df["ÜRÜN/TİP"].str.contains("Periyodik", na=False))]
-    if not labor_match.empty:
-        labor = parse_row(labor_match.iloc[0])
-    else:
-        labor = {"kategori": "İşçilik", "urun_tip": "Periyodik Bakım", "birim": 1, "fiyat": 0, "toplam": 0}
-
-    return {
-        "baseParts": base_parts,
-        "optional": optional,
-        "labor": labor
-    }
-
-# Frontend build dosyalarını frontend/dist dizininden yayınla
-app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
-
-# SPA yönlendirmesi: bütün yolları index.html'e yönlendir
-@app.get("/{full_path:path}")
-async def serve_spa(full_path: str):
-    return FileResponse("frontend/dist/index.html")
+            if not
