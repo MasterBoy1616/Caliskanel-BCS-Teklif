@@ -1,70 +1,160 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { FaClipboardList, FaFileInvoiceDollar, FaUsers } from "react-icons/fa";
-import { Bar } from 'react-chartjs-2';
-import { Chart as ChartJS, BarElement, CategoryScale, LinearScale } from 'chart.js';
-
-ChartJS.register(BarElement, CategoryScale, LinearScale);
 
 const AdminPanel = () => {
-  const [fiyatBakmaCount, setFiyatBakmaCount] = useState(0);
-  const [teklifCount, setTeklifCount] = useState(0);
+  const [randevular, setRandevular] = useState([]);
+  const [fiyatSayisi, setFiyatSayisi] = useState(0);
+  const [randevuSayisi, setRandevuSayisi] = useState(0);
+  const [selectedBrand, setSelectedBrand] = useState("");
+  const [brands, setBrands] = useState([]);
+  const [models, setModels] = useState([]);
+  const [selectedModel, setSelectedModel] = useState("");
+  const [parts, setParts] = useState(null);
 
   useEffect(() => {
-    axios.get("/api/log/fiyatbakmasayisi").then((res) => setFiyatBakmaCount(res.data.adet || 0));
-    axios.get("/api/log/teklifalisayisi").then((res) => setTeklifCount(res.data.adet || 0));
+    fetchLogs();
+    fetchBrands();
   }, []);
 
-  const dashboardData = [
-    {
-      title: "Fiyat Sorgulama",
-      value: fiyatBakmaCount,
-      icon: <FaClipboardList size={30} />,
-      color: "bg-blue-500",
-    },
-    {
-      title: "PDF Teklif Alımı",
-      value: teklifCount,
-      icon: <FaFileInvoiceDollar size={30} />,
-      color: "bg-green-500",
-    },
-    {
-      title: "Kullanıcı Kayıtları",
-      value: fiyatBakmaCount + teklifCount,
-      icon: <FaUsers size={30} />,
-      color: "bg-purple-500",
-    },
-  ];
+  const fetchLogs = async () => {
+    const fiyatResponse = await axios.get("/api/log/fiyatbakmasayisi");
+    const randevuResponse = await axios.get("/api/log/randevusayisi");
+    setFiyatSayisi(fiyatResponse.data.adet);
+    setRandevuSayisi(randevuResponse.data.adet);
+  };
 
-  const chartData = {
-    labels: ["Fiyat Sorgulama", "Teklif Alımı", "Toplam"],
-    datasets: [
-      {
-        label: "İşlem Sayısı",
-        backgroundColor: ["#3b82f6", "#10b981", "#8b5cf6"],
-        data: [fiyatBakmaCount, teklifCount, fiyatBakmaCount + teklifCount],
-      },
-    ],
+  const fetchBrands = async () => {
+    const res = await axios.get("/api/brands");
+    setBrands(res.data);
+  };
+
+  const fetchModels = async (brand) => {
+    const res = await axios.get(`/api/models?brand=${brand}`);
+    setModels(res.data);
+  };
+
+  const fetchParts = async () => {
+    if (!selectedBrand || !selectedModel) return;
+    const res = await axios.get(`/api/parts?brand=${selectedBrand}&model=${selectedModel}`);
+    setParts(res.data);
+  };
+
+  const handleSave = async () => {
+    try {
+      await axios.post("/api/save-prices", parts);
+      alert("✅ Fiyatlar başarıyla kaydedildi!");
+    } catch (err) {
+      console.error(err);
+      alert("❌ Kaydetme sırasında hata oluştu.");
+    }
   };
 
   return (
     <div className="p-6">
-      <h2 className="text-3xl font-bold mb-6 text-center">Admin Dashboard</h2>
+      <h2 className="text-3xl font-bold mb-6 text-center">Admin Paneli</h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-        {dashboardData.map((item, idx) => (
-          <div key={idx} className={`flex items-center gap-4 p-4 rounded-lg text-white ${item.color}`}>
-            {item.icon}
-            <div>
-              <h4 className="text-xl">{item.title}</h4>
-              <p className="text-2xl font-bold">{item.value}</p>
-            </div>
-          </div>
-        ))}
+      <div className="grid grid-cols-2 gap-6 mb-8">
+        <div className="bg-blue-100 p-4 rounded shadow text-center">
+          <h3 className="text-xl font-bold">Toplam Fiyat Bakma</h3>
+          <p className="text-3xl">{fiyatSayisi}</p>
+        </div>
+        <div className="bg-green-100 p-4 rounded shadow text-center">
+          <h3 className="text-xl font-bold">Toplam Randevu Talebi</h3>
+          <p className="text-3xl">{randevuSayisi}</p>
+        </div>
       </div>
 
-      <div className="bg-white rounded-lg p-6 shadow">
-        <Bar data={chartData} />
+      <div className="bg-white p-6 rounded shadow">
+        <h3 className="text-2xl font-bold mb-4">Fiyat Güncelleme</h3>
+
+        <div className="flex gap-4 mb-4">
+          <select
+            className="border p-2 rounded w-1/2"
+            value={selectedBrand}
+            onChange={(e) => {
+              setSelectedBrand(e.target.value);
+              setSelectedModel("");
+              setParts(null);
+              fetchModels(e.target.value);
+            }}
+          >
+            <option value="">Marka Seç</option>
+            {brands.map((brand, idx) => (
+              <option key={idx} value={brand}>
+                {brand}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className="border p-2 rounded w-1/2"
+            value={selectedModel}
+            onChange={(e) => setSelectedModel(e.target.value)}
+            disabled={!selectedBrand}
+          >
+            <option value="">Model Seç</option>
+            {models.map((model, idx) => (
+              <option key={idx} value={model}>
+                {model}
+              </option>
+            ))}
+          </select>
+
+          <button
+            onClick={fetchParts}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Getir
+          </button>
+        </div>
+
+        {parts && (
+          <>
+            <table className="w-full border-collapse mb-4">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border p-2">Kategori</th>
+                  <th className="border p-2">Ürün</th>
+                  <th className="border p-2">Adet</th>
+                  <th className="border p-2">Fiyat (₺)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {parts.baseParts.map((part, idx) => (
+                  <tr key={idx}>
+                    <td className="border p-2">{part.kategori}</td>
+                    <td className="border p-2">{part.urun_tip}</td>
+                    <td className="border p-2">{part.birim}</td>
+                    <td className="border p-2">{part.fiyat}</td>
+                  </tr>
+                ))}
+                {Object.keys(parts.optional).map((key) =>
+                  parts.optional[key].map((part, idx) => (
+                    <tr key={`${key}-${idx}`}>
+                      <td className="border p-2">{part.kategori}</td>
+                      <td className="border p-2">{part.urun_tip}</td>
+                      <td className="border p-2">{part.birim}</td>
+                      <td className="border p-2">{part.fiyat}</td>
+                    </tr>
+                  ))
+                )}
+                <tr>
+                  <td className="border p-2">{parts.labor.kategori}</td>
+                  <td className="border p-2">{parts.labor.urun_tip}</td>
+                  <td className="border p-2">{parts.labor.birim}</td>
+                  <td className="border p-2">{parts.labor.fiyat}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <button
+              onClick={handleSave}
+              className="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-700"
+            >
+              Fiyatları Kaydet
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
