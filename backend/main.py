@@ -1,9 +1,9 @@
-from fastapi import FastAPI, Body, Request
-from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI, Request, Body
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 import pandas as pd
-import os
 import json
+import os
 from datetime import datetime
 
 app = FastAPI()
@@ -12,14 +12,15 @@ app = FastAPI()
 excel_path = "backend/yeni_bosch_fiyatlari.xlsm"
 sheets = pd.read_excel(excel_path, sheet_name=None)
 
-# Log dosyası path'leri
+# Log dosyaları
 FIYAT_LOG_PATH = "backend/logs/fiyat_bakma_logu.json"
 RANDEVU_LOG_PATH = "backend/logs/randevu_logu.json"
 
+# ============ API İŞLEMLERİ ============
+
 def parse_miktar(birim_str):
     try:
-        if pd.isna(birim_str):
-            return 1
+        if pd.isna(birim_str): return 1
         value = str(birim_str).split()[0].replace(",", ".")
         return float(value)
     except:
@@ -28,10 +29,8 @@ def parse_miktar(birim_str):
 def parse_row(row):
     fiyat = row.get("Tavsiye Edilen Satış Fiyatı", 0)
     birim = row.get("Birim", "1")
-    if pd.isna(fiyat):
-        fiyat = 0
-    if pd.isna(birim):
-        birim = "1"
+    if pd.isna(fiyat): fiyat = 0
+    if pd.isna(birim): birim = "1"
     miktar = parse_miktar(birim)
     toplam = round(fiyat * miktar)
     return {
@@ -70,10 +69,7 @@ def get_parts(brand: str, model: str):
         if not match_part.empty:
             parts.append(parse_row(match_part.iloc[0]))
         if iscilik_anahtar:
-            match_iscilik = df[
-                (df["KATEGORİ"] == "İşçilik") &
-                (df["ÜRÜN/TİP"].str.contains(iscilik_anahtar, na=False))
-            ]
+            match_iscilik = df[(df["KATEGORİ"] == "İşçilik") & (df["ÜRÜN/TİP"].str.contains(iscilik_anahtar, na=False))]
             if not match_iscilik.empty:
                 parts.append(parse_row(match_iscilik.iloc[0]))
         return parts
@@ -81,13 +77,10 @@ def get_parts(brand: str, model: str):
     optional = {
         "balata": get_optional_parts("ÖnFrenBalata", "Balata"),
         "disk": get_optional_parts("ÖnFrenDisk", "Disk"),
-        "silecek": get_optional_parts("Silecek"),
+        "silecek": get_optional_parts("Silecek")
     }
 
-    labor_match = df[
-        (df["KATEGORİ"] == "İşçilik") &
-        (df["ÜRÜN/TİP"].str.contains("Periyodik", na=False))
-    ]
+    labor_match = df[(df["KATEGORİ"] == "İşçilik") & (df["ÜRÜN/TİP"].str.contains("Periyodik", na=False))]
     if not labor_match.empty:
         labor = parse_row(labor_match.iloc[0])
     else:
@@ -99,93 +92,67 @@ def get_parts(brand: str, model: str):
         "labor": labor
     }
 
-# Fiyat güncelleme API
-@app.post("/api/save-prices")
-async def save_prices(request: Request):
+# Loglama
+@app.post("/api/log/fiyatbakma")
+def log_fiyat_bakma():
+    os.makedirs(os.path.dirname(FIYAT_LOG_PATH), exist_ok=True)
+    log = {"timestamp": datetime.now().isoformat()}
+    try:
+        if os.path.exists(FIYAT_LOG_PATH):
+            with open(FIYAT_LOG_PATH, "r+") as f:
+                logs = json.load(f)
+                logs.append(log)
+                f.seek(0)
+                json.dump(logs, f, indent=2)
+                f.truncate()
+        else:
+            with open(FIYAT_LOG_PATH, "w") as f:
+                json.dump([log], f, indent=2)
+    except:
+        pass
+    return {"success": True}
+
+@app.post("/api/log/randevu")
+async def log_randevu(request: Request):
     data = await request.json()
-
-    save_path = "backend/logs/guncel_fiyatlar.json"
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-
-    with open(save_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-
-    return {"success": True, "message": "Fiyatlar kaydedildi"}
-
-# Log sistemleri
-@app.get("/api/log/fiyatbakmasayisi")
-def get_fiyat_bakma_sayisi():
-    if os.path.exists(FIYAT_LOG_PATH):
-        with open(FIYAT_LOG_PATH, "r") as f:
-            logs = json.load(f)
-            return {"adet": len(logs)}
-    return {"adet": 0}
-
-@app.get("/api/log/randevusayisi")
-def get_randevu_sayisi():
-    if os.path.exists(RANDEVU_LOG_PATH):
-        with open(RANDEVU_LOG_PATH, "r") as f:
-            logs = json.load(f)
-            return {"adet": len(logs)}
-    return {"adet": 0}
+    os.makedirs(os.path.dirname(RANDEVU_LOG_PATH), exist_ok=True)
+    try:
+        if os.path.exists(RANDEVU_LOG_PATH):
+            with open(RANDEVU_LOG_PATH, "r+") as f:
+                logs = json.load(f)
+                logs.append(data)
+                f.seek(0)
+                json.dump(logs, f, indent=2, ensure_ascii=False)
+                f.truncate()
+        else:
+            with open(RANDEVU_LOG_PATH, "w", encoding="utf-8") as f:
+                json.dump([data], f, indent=2, ensure_ascii=False)
+    except:
+        pass
+    return {"success": True}
 
 @app.get("/api/randevular")
 def get_randevular():
     if os.path.exists(RANDEVU_LOG_PATH):
-        with open(RANDEVU_LOG_PATH, "r") as f:
+        with open(RANDEVU_LOG_PATH, "r", encoding="utf-8") as f:
             randevular = json.load(f)
             randevular.sort(key=lambda x: x.get("randevuTarihi", ""), reverse=True)
             return randevular
     return []
 
-@app.post("/api/randevu")
-async def save_randevu(request: Request):
-    randevu = await request.json()
+# ============ FRONTEND SERVE ============
 
-    os.makedirs(os.path.dirname(RANDEVU_LOG_PATH), exist_ok=True)
+# assets ve dosyaları sunmak
+app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
 
-    if os.path.exists(RANDEVU_LOG_PATH):
-        with open(RANDEVU_LOG_PATH, "r") as f:
-            randevular = json.load(f)
-    else:
-        randevular = []
+# favicon.ico varsa yükle
+if os.path.exists("frontend/dist/favicon.ico"):
+    app.mount("/favicon.ico", StaticFiles(directory="frontend/dist/favicon.ico"), name="favicon")
 
-    randevular.append(randevu)
-
-    with open(RANDEVU_LOG_PATH, "w", encoding="utf-8") as f:
-        json.dump(randevular, f, ensure_ascii=False, indent=2)
-
-    return {"success": True, "message": "Randevu başarıyla kaydedildi."}
-
-@app.patch("/api/randevular/update")
-def update_randevu(index: int = Body(...), durum: str = Body(...)):
-    if os.path.exists(RANDEVU_LOG_PATH):
-        with open(RANDEVU_LOG_PATH, "r+") as f:
-            logs = json.load(f)
-            if 0 <= index < len(logs):
-                logs[index]["durum"] = durum
-                f.seek(0)
-                json.dump(logs, f, indent=2, ensure_ascii=False)
-                f.truncate()
-                return {"success": True}
-    return {"success": False}
-
-@app.delete("/api/randevular/delete")
-def delete_randevu(index: int = Body(...)):
-    if os.path.exists(RANDEVU_LOG_PATH):
-        with open(RANDEVU_LOG_PATH, "r+") as f:
-            logs = json.load(f)
-            if 0 <= index < len(logs):
-                logs.pop(index)
-                f.seek(0)
-                json.dump(logs, f, indent=2, ensure_ascii=False)
-                f.truncate()
-                return {"success": True}
-    return {"success": False}
-
-# Frontend yayınlama
-app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
-
+# bütün diğer yolları yakala → frontend index.html dön
 @app.get("/{full_path:path}")
 async def serve_spa(full_path: str):
-    return FileResponse("frontend/dist/index.html")
+    index_path = "frontend/dist/index.html"
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"detail": "Frontend Build Eksik veya Hatalı!"}
