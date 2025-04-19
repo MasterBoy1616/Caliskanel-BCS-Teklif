@@ -1,12 +1,12 @@
 import React from "react";
 
-function Admin() {
+const Admin = () => {
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Admin Paneli</h1>
-      <p>Buraya fiyat düzenleme ve grafik paneli ileride eklenecek.</p>
+    <div className="flex flex-col items-center justify-center min-h-screen p-4">
+      <h1 className="text-3xl font-bold mb-6">Admin Paneli</h1>
+      <p>Burada fiyat düzenleme ve randevu kayıtları görünecek (hazırlanıyor)</p>
     </div>
   );
-}
+};
 
 export default Admin;
