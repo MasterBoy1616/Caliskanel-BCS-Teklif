@@ -2,16 +2,15 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  root: "./frontend",
   plugins: [react()],
-  base: "/", // bu kesinlikle böyle olacak!
+  base: '/',  
   build: {
-    outDir: "../frontend/dist", // dikkat: parent seviyeye build alıyoruz
+    outDir: 'dist',
     emptyOutDir: true,
   },
   server: {
     proxy: {
       '/api': 'http://localhost:8000',
-    },
-  },
+    }
+  }
 });
