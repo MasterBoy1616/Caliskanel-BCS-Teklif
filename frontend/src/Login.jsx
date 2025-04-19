@@ -1,45 +1,40 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-const Login = ({ setIsLoggedIn }) => {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+const Login = () => {
+  const navigate = useNavigate();
+  const [form, setForm] = useState({ username: '', password: '' });
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (username === "admin" && password === "wq27t9mf") {
-      setIsLoggedIn(true);
+    if (form.username === "admin" && form.password === "wq27t9mf") {
+      navigate("/admin");
     } else {
-      alert("❌ Hatalı kullanıcı adı veya şifre!");
+      alert("Hatalı giriş bilgileri!");
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <form
-        onSubmit={handleLogin}
-        className="flex flex-col bg-white p-8 rounded shadow-md gap-4 w-80"
-      >
-        <h2 className="text-2xl font-bold text-center mb-4">Admin Giriş</h2>
-        <input
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+      <form onSubmit={handleLogin} className="bg-white p-8 rounded shadow-md w-80">
+        <h2 className="text-2xl font-bold mb-6 text-center">Admin Girişi</h2>
+        <input 
           type="text"
+          name="username"
           placeholder="Kullanıcı Adı"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          className="w-full mb-4 p-2 border rounded"
+          onChange={(e) => setForm({...form, username: e.target.value})}
           required
-          className="border p-2 rounded"
         />
-        <input
+        <input 
           type="password"
+          name="password"
           placeholder="Şifre"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          className="w-full mb-6 p-2 border rounded"
+          onChange={(e) => setForm({...form, password: e.target.value})}
           required
-          className="border p-2 rounded"
         />
-        <button
-          type="submit"
-          className="bg-blue-600 text-white py-2 rounded hover:bg-blue-800"
-        >
+        <button type="submit" className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
           Giriş Yap
         </button>
       </form>
