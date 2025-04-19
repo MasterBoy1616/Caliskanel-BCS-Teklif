@@ -1,36 +1,32 @@
 import React, { useState } from "react";
-import Dashboard from "./Dashboard";
+import GrafikDashboard from "./GrafikDashboard";
 import FiyatYonetim from "./FiyatYonetim";
-import { FaChartBar, FaMoneyBillWave } from "react-icons/fa";
 
 const AdminPanel = () => {
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [aktifSekme, setAktifSekme] = useState("dashboard");
 
   return (
-    <div className="min-h-screen flex bg-gray-100">
-      {/* Sidebar */}
-      <div className="w-60 bg-blue-800 text-white flex flex-col p-4 space-y-4">
-        <h1 className="text-2xl font-bold mb-6">Çalışkanel Admin</h1>
+    <div className="p-6">
+      <h1 className="text-3xl font-bold mb-6 text-center">Çalışkanel Bosch Car Admin Paneli</h1>
 
+      <div className="flex justify-center mb-6 gap-4">
         <button
-          className={`flex items-center gap-3 p-3 rounded hover:bg-blue-600 ${activeTab === "dashboard" ? "bg-blue-600" : ""}`}
-          onClick={() => setActiveTab("dashboard")}
+          onClick={() => setAktifSekme("dashboard")}
+          className={`px-4 py-2 rounded ${aktifSekme === "dashboard" ? "bg-blue-600 text-white" : "bg-gray-300"}`}
         >
-          <FaChartBar /> Dashboard
+          Dashboard
         </button>
-
         <button
-          className={`flex items-center gap-3 p-3 rounded hover:bg-blue-600 ${activeTab === "fiyat" ? "bg-blue-600" : ""}`}
-          onClick={() => setActiveTab("fiyat")}
+          onClick={() => setAktifSekme("fiyat")}
+          className={`px-4 py-2 rounded ${aktifSekme === "fiyat" ? "bg-blue-600 text-white" : "bg-gray-300"}`}
         >
-          <FaMoneyBillWave /> Fiyat Yönetimi
+          Fiyat Yönetimi
         </button>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 p-6">
-        {activeTab === "dashboard" && <Dashboard />}
-        {activeTab === "fiyat" && <FiyatYonetim />}
+      <div>
+        {aktifSekme === "dashboard" && <GrafikDashboard />}
+        {aktifSekme === "fiyat" && <FiyatYonetim />}
       </div>
     </div>
   );
