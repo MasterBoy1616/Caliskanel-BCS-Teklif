@@ -14,7 +14,9 @@
     "react-icons": "^4.10.1",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.5.28",
-    "html2canvas": "^1.4.1"
+    "html2canvas": "^1.4.1",
+    "react-chartjs-2": "^5.2.0",
+    "chart.js": "^4.4.0"
   },
   "devDependencies": {
     "vite": "^4.5.0",
