@@ -7,18 +7,12 @@ import json
 
 app = FastAPI()
 
-# Excel dosyası
 excel_path = "backend/yeni_bosch_fiyatlari.xlsm"
 sheets = pd.read_excel(excel_path, sheet_name=None)
 
-# Log dosyaları
-FIYAT_LOG_PATH = "backend/logs/fiyat_bakma_logu.json"
-RANDEVU_LOG_PATH = "backend/logs/randevu_logu.json"
-
 def parse_miktar(birim_str):
     try:
-        if pd.isna(birim_str):
-            return 1
+        if pd.isna(birim_str): return 1
         value = str(birim_str).split()[0].replace(",", ".")
         return float(value)
     except:
@@ -27,10 +21,8 @@ def parse_miktar(birim_str):
 def parse_row(row):
     fiyat = row.get("Tavsiye Edilen Satış Fiyatı", 0)
     birim = row.get("Birim", "1")
-    if pd.isna(fiyat):
-        fiyat = 0
-    if pd.isna(birim):
-        birim = "1"
+    if pd.isna(fiyat): fiyat = 0
+    if pd.isna(birim): birim = "1"
     miktar = parse_miktar(birim)
     toplam = round(fiyat * miktar)
     return {
@@ -92,22 +84,8 @@ def get_parts(brand: str, model: str):
         "labor": labor
     }
 
-@app.post("/api/save-prices")
-async def save_prices(request: Request):
-    data = await request.json()
-    save_path = "backend/logs/guncel_fiyatlar.json"
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-
-    with open(save_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-
-    return {"success": True, "message": "Fiyatlar kaydedildi"}
-
-# ---- SPA Routing için ----
-
-# Frontend static dosyaları
-app.mount("/static", StaticFiles(directory="frontend/dist/assets"), name="static")
-app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="frontend")
+# Frontend build'i mount et
+app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
 
 @app.get("/{full_path:path}")
 async def serve_spa(full_path: str):
