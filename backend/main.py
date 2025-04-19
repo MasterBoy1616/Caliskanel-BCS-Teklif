@@ -1,22 +1,16 @@
-from fastapi import FastAPI, Request, Body
+from fastapi import FastAPI, Body, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 import pandas as pd
 import json
 import os
-from datetime import datetime
 
 app = FastAPI()
 
-# Excel dosyası
 excel_path = "backend/yeni_bosch_fiyatlari.xlsm"
 sheets = pd.read_excel(excel_path, sheet_name=None)
 
-# Log dosyaları
 FIYAT_LOG_PATH = "backend/logs/fiyat_bakma_logu.json"
-RANDEVU_LOG_PATH = "backend/logs/randevu_logu.json"
-
-# ============ API İŞLEMLERİ ============
 
 def parse_miktar(birim_str):
     try:
@@ -81,10 +75,7 @@ def get_parts(brand: str, model: str):
     }
 
     labor_match = df[(df["KATEGORİ"] == "İşçilik") & (df["ÜRÜN/TİP"].str.contains("Periyodik", na=False))]
-    if not labor_match.empty:
-        labor = parse_row(labor_match.iloc[0])
-    else:
-        labor = {"kategori": "İşçilik", "urun_tip": "Periyodik Bakım", "birim": 1, "fiyat": 0, "toplam": 0}
+    labor = parse_row(labor_match.iloc[0]) if not labor_match.empty else {"kategori": "İşçilik", "urun_tip": "Periyodik Bakım", "birim": 1, "fiyat": 0, "toplam": 0}
 
     return {
         "baseParts": base_parts,
@@ -92,67 +83,19 @@ def get_parts(brand: str, model: str):
         "labor": labor
     }
 
-# Loglama
 @app.post("/api/log/fiyatbakma")
-def log_fiyat_bakma():
-    os.makedirs(os.path.dirname(FIYAT_LOG_PATH), exist_ok=True)
-    log = {"timestamp": datetime.now().isoformat()}
-    try:
-        if os.path.exists(FIYAT_LOG_PATH):
-            with open(FIYAT_LOG_PATH, "r+") as f:
-                logs = json.load(f)
-                logs.append(log)
-                f.seek(0)
-                json.dump(logs, f, indent=2)
-                f.truncate()
-        else:
-            with open(FIYAT_LOG_PATH, "w") as f:
-                json.dump([log], f, indent=2)
-    except:
-        pass
+def log_fiyat_bakma(data: dict = Body(...)):
+    logs = []
+    if os.path.exists(FIYAT_LOG_PATH):
+        with open(FIYAT_LOG_PATH, "r") as f:
+            logs = json.load(f)
+    logs.append(data)
+    with open(FIYAT_LOG_PATH, "w") as f:
+        json.dump(logs, f, indent=2, ensure_ascii=False)
     return {"success": True}
 
-@app.post("/api/log/randevu")
-async def log_randevu(request: Request):
-    data = await request.json()
-    os.makedirs(os.path.dirname(RANDEVU_LOG_PATH), exist_ok=True)
-    try:
-        if os.path.exists(RANDEVU_LOG_PATH):
-            with open(RANDEVU_LOG_PATH, "r+") as f:
-                logs = json.load(f)
-                logs.append(data)
-                f.seek(0)
-                json.dump(logs, f, indent=2, ensure_ascii=False)
-                f.truncate()
-        else:
-            with open(RANDEVU_LOG_PATH, "w", encoding="utf-8") as f:
-                json.dump([data], f, indent=2, ensure_ascii=False)
-    except:
-        pass
-    return {"success": True}
+app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
 
-@app.get("/api/randevular")
-def get_randevular():
-    if os.path.exists(RANDEVU_LOG_PATH):
-        with open(RANDEVU_LOG_PATH, "r", encoding="utf-8") as f:
-            randevular = json.load(f)
-            randevular.sort(key=lambda x: x.get("randevuTarihi", ""), reverse=True)
-            return randevular
-    return []
-
-# ============ FRONTEND SERVE ============
-
-# assets ve dosyaları sunmak
-app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
-
-# favicon.ico varsa yükle
-if os.path.exists("frontend/dist/favicon.ico"):
-    app.mount("/favicon.ico", StaticFiles(directory="frontend/dist/favicon.ico"), name="favicon")
-
-# bütün diğer yolları yakala → frontend index.html dön
 @app.get("/{full_path:path}")
 async def serve_spa(full_path: str):
-    index_path = "frontend/dist/index.html"
-    if os.path.exists(index_path):
-        return FileResponse(index_path)
-    return {"detail": "Frontend Build Eksik veya Hatalı!"}
+    return FileResponse("frontend/dist/index.html")
