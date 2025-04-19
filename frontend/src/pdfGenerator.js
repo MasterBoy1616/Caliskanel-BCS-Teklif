@@ -1,69 +1,63 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import html2canvas from "html2canvas";
 
-export const generatePdf = async (formData, toplamTutar, selectedParts) => {
+export const generatePdf = (formData, brand, model, parts, selectedExtras) => {
   const doc = new jsPDF();
 
-  // Başlık
-  doc.setFont("helvetica", "bold");
+  // Bosch ve Çalışkanel logoları
+  const boschLogo = "/logo-bosch.png"; 
+  const caliskanelLogo = "/logo-caliskanel.png";
+
+  doc.addImage(boschLogo, "PNG", 10, 10, 50, 20);
+  doc.addImage(caliskanelLogo, "PNG", 150, 10, 50, 20);
+
+  doc.setFont("Helvetica", "bold");
   doc.setFontSize(18);
-  doc.text("Çalışkanel Bosch Car Servis", 105, 20, { align: "center" });
+  doc.text("Çalışkanel Bosch Car Servisi", 105, 40, { align: "center" });
 
   doc.setFontSize(12);
-  doc.setFont("helvetica", "normal");
-  doc.text(`Ad Soyad: ${formData.adSoyad}`, 20, 40);
-  doc.text(`Plaka: ${formData.plaka}`, 20, 50);
+  doc.text(`Ad Soyad: ${formData.adSoyad}`, 14, 60);
+  doc.text(`Plaka: ${formData.plaka}`, 14, 68);
+  doc.text(`Araç: ${brand} ${model}`, 14, 76);
 
-  doc.setFontSize(14);
-  doc.setFont("helvetica", "bold");
-  doc.text("Seçilen Bakım Parçaları", 105, 70, { align: "center" });
+  const tableData = [];
 
-  // Parça Tablosu
-  const tableData = selectedParts.map(part => [
-    part.kategori,
-    part.urun_tip,
-    part.birim,
-    `${part.fiyat} TL`,
-    `${part.toplam} TL`
+  parts.baseParts.forEach((p) => {
+    tableData.push([p.kategori, p.urun_tip, p.birim, `${p.fiyat} ₺`, `${p.toplam} ₺`]);
+  });
+
+  Object.keys(selectedExtras).forEach((key) => {
+    if (selectedExtras[key]) {
+      parts.optional[key].forEach((p) => {
+        tableData.push([p.kategori, p.urun_tip, p.birim, `${p.fiyat} ₺`, `${p.toplam} ₺`]);
+      });
+    }
+  });
+
+  tableData.push([
+    parts.labor.kategori,
+    parts.labor.urun_tip,
+    parts.labor.birim,
+    `${parts.labor.fiyat} ₺`,
+    `${parts.labor.toplam} ₺`
   ]);
 
   autoTable(doc, {
-    head: [["Kategori", "Ürün", "Birim", "Birim Fiyat", "Toplam Fiyat"]],
+    startY: 85,
+    head: [["Kategori", "Ürün", "Adet", "Fiyat", "Toplam"]],
     body: tableData,
-    startY: 80,
-    theme: 'grid',
-    styles: { font: 'helvetica', fontSize: 10 },
+    theme: "striped",
+    styles: { font: "Helvetica", fontSize: 10 },
   });
 
-  // Toplam
+  const toplamTutar = tableData.reduce((acc, curr) => {
+    const total = Number(curr[4].replace(" ₺", "").replace(",", ""));
+    return acc + total;
+  }, 0);
+
   doc.setFontSize(14);
-  doc.setFont("helvetica", "bold");
-  doc.text(`Toplam Tutar (KDV Dahil): ${toplamTutar} TL`, 105, doc.previousAutoTable.finalY + 20, { align: "center" });
-
-  // Logo Ekleme
-  const boschLogo = await loadImage("/logo-bosch.png");
-  const caliskanelLogo = await loadImage("/logo-caliskanel.png");
-
-  if (boschLogo) doc.addImage(boschLogo, "PNG", 10, 10, 30, 15);
-  if (caliskanelLogo) doc.addImage(caliskanelLogo, "PNG", 165, 10, 30, 15);
+  doc.setTextColor(0, 102, 0);
+  doc.text(`Toplam Tutar: ${toplamTutar.toLocaleString()} ₺ (KDV Dahil)`, 14, doc.lastAutoTable.finalY + 15);
 
   doc.save(`teklif_${formData.plaka}.pdf`);
-};
-
-const loadImage = (src) => {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0);
-      resolve(canvas.toDataURL("image/png"));
-    };
-    img.onerror = () => resolve(null);
-    img.src = src;
-  });
 };
