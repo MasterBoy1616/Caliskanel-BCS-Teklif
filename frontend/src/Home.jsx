@@ -132,6 +132,11 @@ const Home = () => {
                   </tr>
                 </tbody>
               </table>
+// Home.jsx içinde toplamı şöyle göstereceğiz:
+
+<div className="text-2xl md:text-3xl font-bold text-center mt-8 p-4 bg-blue-100 rounded-lg shadow-lg">
+  Toplam Tutar: {calculateTotal().toLocaleString("tr-TR")} TL (KDV Dahil)
+</div>
 
               <div className="text-2xl font-semibold text-right mt-6">
                 Toplam Tutar: {calculateTotal().toLocaleString()} TL
