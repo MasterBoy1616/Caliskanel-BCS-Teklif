@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Body, Request
+from fastapi import FastAPI, Request, Body
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import pandas as pd
@@ -11,7 +11,9 @@ app = FastAPI()
 excel_path = "backend/yeni_bosch_fiyatlari.xlsm"
 sheets = pd.read_excel(excel_path, sheet_name=None)
 
+# Log dosyaları
 FIYAT_LOG_PATH = "backend/logs/fiyat_bakma_logu.json"
+RANDEVU_LOG_PATH = "backend/logs/randevu_logu.json"
 
 def parse_miktar(birim_str):
     try:
@@ -90,30 +92,22 @@ def get_parts(brand: str, model: str):
         "labor": labor
     }
 
-@app.get("/api/log/fiyatbakmasayisi")
-def get_fiyat_bakma_sayisi():
-    if os.path.exists(FIYAT_LOG_PATH):
-        with open(FIYAT_LOG_PATH, "r") as f:
-            logs = json.load(f)
-            return {"adet": len(logs)}
-    return {"adet": 0}
-
-@app.post("/api/log/fiyatbakma")
-async def post_fiyat_bakma(request: Request):
+@app.post("/api/save-prices")
+async def save_prices(request: Request):
     data = await request.json()
-    os.makedirs(os.path.dirname(FIYAT_LOG_PATH), exist_ok=True)
-    if os.path.exists(FIYAT_LOG_PATH):
-        with open(FIYAT_LOG_PATH, "r") as f:
-            logs = json.load(f)
-    else:
-        logs = []
-    logs.append(data)
-    with open(FIYAT_LOG_PATH, "w", encoding="utf-8") as f:
-        json.dump(logs, f, ensure_ascii=False, indent=2)
-    return {"success": True}
+    save_path = "backend/logs/guncel_fiyatlar.json"
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
-# Frontend sunumu
-app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
+    with open(save_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+    return {"success": True, "message": "Fiyatlar kaydedildi"}
+
+# ---- SPA Routing için ----
+
+# Frontend static dosyaları
+app.mount("/static", StaticFiles(directory="frontend/dist/assets"), name="static")
+app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="frontend")
 
 @app.get("/{full_path:path}")
 async def serve_spa(full_path: str):
