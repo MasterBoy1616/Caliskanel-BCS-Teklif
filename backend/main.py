@@ -4,6 +4,7 @@ from fastapi.responses import FileResponse
 import pandas as pd
 import os
 import json
+from datetime import datetime
 
 app = FastAPI()
 
@@ -11,7 +12,9 @@ app = FastAPI()
 excel_path = "backend/yeni_bosch_fiyatlari.xlsm"
 sheets = pd.read_excel(excel_path, sheet_name=None)
 
+# Log dosyası path'leri
 FIYAT_LOG_PATH = "backend/logs/fiyat_bakma_logu.json"
+RANDEVU_LOG_PATH = "backend/logs/randevu_logu.json"
 
 def parse_miktar(birim_str):
     try:
@@ -87,13 +90,9 @@ def get_parts(brand: str, model: str):
         "labor": labor
     }
 
-# Frontend static dosyaları
+# Frontend statik dosyaları ve React yönlendirme
 app.mount("/static", StaticFiles(directory="frontend/dist/assets"), name="static")
 
-# React router desteği
 @app.get("/{full_path:path}")
-async def serve_react(full_path: str):
-    index_path = "frontend/dist/index.html"
-    if os.path.exists(index_path):
-        return FileResponse(index_path)
-    return {"detail": "Not Found"}
+async def serve_spa(full_path: str):
+    return FileResponse("frontend/dist/index.html")
