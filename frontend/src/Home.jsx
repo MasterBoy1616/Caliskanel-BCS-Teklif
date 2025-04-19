@@ -1,164 +1,70 @@
-import React, { useState, useEffect } from "react";
-import { generatePdf } from "./pdfGenerator";
-import axios from "axios";
+import React, { useState, useEffect } from 'react';
+import { generatePdf } from './pdfGenerator';
+import axios from 'axios';
 
 const Home = () => {
   const [brands, setBrands] = useState([]);
   const [models, setModels] = useState([]);
-  const [selectedBrand, setSelectedBrand] = useState("");
-  const [selectedModel, setSelectedModel] = useState("");
-  const [parts, setParts] = useState(null);
-  const [selectedExtras, setSelectedExtras] = useState({
-    balata: false,
-    disk: false,
-    silecek: false,
-  });
+  const [selectedBrand, setSelectedBrand] = useState('');
+  const [selectedModel, setSelectedModel] = useState('');
+  const [parts, setParts] = useState([]);
+  const [totalPrice, setTotalPrice] = useState(0);
   const [formData, setFormData] = useState({
-    adSoyad: "",
-    plaka: "",
+    adSoyad: '',
+    plaka: ''
   });
 
   useEffect(() => {
-    axios.get("/api/brands").then((res) => setBrands(res.data));
+    // Burada brands ve models çekme işlemleri vardı, API yoksa sabit veri ekleyebilirsin
   }, []);
 
-  useEffect(() => {
-    if (selectedBrand) {
-      axios.get(`/api/models?brand=${selectedBrand}`).then((res) => setModels(res.data));
-    }
-  }, [selectedBrand]);
-
-  useEffect(() => {
-    if (selectedBrand && selectedModel) {
-      axios.get(`/api/parts?brand=${selectedBrand}&model=${selectedModel}`).then((res) => setParts(res.data));
-      axios.post("/api/log/fiyatbakma");
-    }
-  }, [selectedBrand, selectedModel]);
-
-  const calculateTotal = () => {
-    if (!parts) return 0;
-    let total = 0;
-    parts.baseParts.forEach(p => total += p.toplam);
-    Object.keys(selectedExtras).forEach(key => {
-      if (selectedExtras[key]) {
-        parts.optional[key].forEach(p => total += p.toplam);
-      }
-    });
-    total += parts.labor.toplam;
-    return total;
+  const handleInputChange = (e) => {
+    setFormData({...formData, [e.target.name]: e.target.value});
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!parts) return;
-    generatePdf(formData, parts, selectedExtras, calculateTotal());
+  const handleGeneratePdf = () => {
+    if (!formData.adSoyad || !formData.plaka) {
+      alert("Lütfen isim ve plaka giriniz.");
+      return;
+    }
+    generatePdf(formData, parts, totalPrice);
   };
 
   return (
-    <div className="app-background">
+    <div className="app-background p-4">
       <div className="app-container">
-        <h2 className="text-3xl font-bold mb-6">Çalışkanel Bosch Car Servis</h2>
-        
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="selectors flex flex-wrap gap-4">
-            <select value={selectedBrand} onChange={(e) => {
-              setSelectedBrand(e.target.value);
-              setSelectedModel("");
-              setParts(null);
-            }} className="border p-2 rounded">
-              <option value="">Marka Seç</option>
-              {brands.map((b) => (
-                <option key={b} value={b}>{b}</option>
-              ))}
-            </select>
+        <h1 className="text-3xl font-bold mb-6 text-center">Çalışkanel Bosch Car Servisi</h1>
 
-            <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)}
-              disabled={!selectedBrand} className="border p-2 rounded">
-              <option value="">Model Seç</option>
-              {models.map((m) => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
+        <div className="mb-4 flex flex-col md:flex-row gap-2">
+          <input 
+            type="text" 
+            name="adSoyad" 
+            placeholder="Ad Soyad" 
+            value={formData.adSoyad}
+            onChange={handleInputChange}
+            className="border p-2 rounded w-full md:w-1/2"
+          />
+          <input 
+            type="text" 
+            name="plaka" 
+            placeholder="Araç Plakası" 
+            value={formData.plaka}
+            onChange={handleInputChange}
+            className="border p-2 rounded w-full md:w-1/2"
+          />
+        </div>
 
-            <input type="text" name="adSoyad" placeholder="Ad Soyad" value={formData.adSoyad}
-              onChange={(e) => setFormData({ ...formData, adSoyad: e.target.value })}
-              className="border p-2 rounded" required />
-            <input type="text" name="plaka" placeholder="Plaka" value={formData.plaka}
-              onChange={(e) => setFormData({ ...formData, plaka: e.target.value })}
-              className="border p-2 rounded" required />
-          </div>
+        <div className="text-2xl font-bold text-center mb-6">
+          Toplam: {totalPrice.toLocaleString('tr-TR')} ₺ (KDV Dahil)
+        </div>
 
-          {parts && (
-            <>
-              <table className="mt-4 overflow-x-auto block">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="border p-2">Kategori</th>
-                    <th className="border p-2">Ürün</th>
-                    <th className="border p-2">Birim</th>
-                    <th className="border p-2">Fiyat (TL)</th>
-                    <th className="border p-2">Toplam (TL)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {parts.baseParts.map((p, i) => (
-                    <tr key={i}>
-                      <td className="border p-2">{p.kategori}</td>
-                      <td className="border p-2">{p.urun_tip}</td>
-                      <td className="border p-2">{p.birim}</td>
-                      <td className="border p-2">{p.fiyat}</td>
-                      <td className="border p-2">{p.toplam}</td>
-                    </tr>
-                  ))}
-                  {Object.entries(parts.optional).map(([key, items]) =>
-                    selectedExtras[key]
-                      ? items.map((p, i) => (
-                        <tr key={`${key}-${i}`}>
-                          <td className="border p-2">{p.kategori}</td>
-                          <td className="border p-2">{p.urun_tip}</td>
-                          <td className="border p-2">{p.birim}</td>
-                          <td className="border p-2">{p.fiyat}</td>
-                          <td className="border p-2">{p.toplam}</td>
-                        </tr>
-                      ))
-                      : null
-                  )}
-                  <tr className="font-bold">
-                    <td className="border p-2">{parts.labor.kategori}</td>
-                    <td className="border p-2">{parts.labor.urun_tip}</td>
-                    <td className="border p-2">{parts.labor.birim}</td>
-                    <td className="border p-2">{parts.labor.fiyat}</td>
-                    <td className="border p-2">{parts.labor.toplam}</td>
-                  </tr>
-                </tbody>
-              </table>
-// Home.jsx içinde toplamı şöyle göstereceğiz:
+        <button 
+          onClick={handleGeneratePdf}
+          className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded"
+        >
+          📄 Teklifi PDF Olarak İndir
+        </button>
 
-<div className="text-2xl md:text-3xl font-bold text-center mt-8 p-4 bg-blue-100 rounded-lg shadow-lg">
-  Toplam Tutar: {calculateTotal().toLocaleString("tr-TR")} TL (KDV Dahil)
-</div>
-
-              <div className="text-2xl font-semibold text-right mt-6">
-                Toplam Tutar: {calculateTotal().toLocaleString()} TL
-              </div>
-            </>
-          )}
-
-          <div className="extras flex gap-4 mt-4">
-            {["balata", "disk", "silecek"].map((opt) => (
-              <label key={opt} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={selectedExtras[opt]}
-                  onChange={() => setSelectedExtras((prev) => ({ ...prev, [opt]: !prev[opt] }))}
-                />
-                {opt.toUpperCase()}
-              </label>
-            ))}
-          </div>
-
-          <button type="submit" className="button mt-4 self-center">📄 Teklif PDF Al</button>
-        </form>
       </div>
     </div>
   );
