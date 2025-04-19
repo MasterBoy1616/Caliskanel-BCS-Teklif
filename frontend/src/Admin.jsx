@@ -1,104 +1,87 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Bar } from 'react-chartjs-2';
-import 'chart.js/auto';
 
 const AdminPanel = () => {
-  const [activeTab, setActiveTab] = useState("dashboard");
-  const [randevuSayisi, setRandevuSayisi] = useState(0);
-  const [fiyatBakmaSayisi, setFiyatBakmaSayisi] = useState(0);
-  const [parts, setParts] = useState([]);
-  const [updatedParts, setUpdatedParts] = useState([]);
+  const [fiyatlar, setFiyatlar] = useState([]);
+  const [oran, setOran] = useState(0);
 
   useEffect(() => {
-    axios.get("/api/log/fiyatbakmasayisi").then(res => setFiyatBakmaSayisi(res.data.adet));
-    axios.get("/api/log/randevusayisi").then(res => setRandevuSayisi(res.data.adet));
-    axios.get("/api/parts?brand=FIAT&model=EGEA") // örnek default
-      .then(res => setParts(res.data.baseParts));
+    fetchFiyatlar();
   }, []);
 
-  const handlePriceChange = (index, newPrice) => {
-    const updated = [...parts];
-    updated[index].fiyat = Number(newPrice);
-    updated[index].toplam = Number(newPrice) * updated[index].birim;
-    setParts(updated);
-    setUpdatedParts(updated);
-  };
-
-  const handleSavePrices = async () => {
+  const fetchFiyatlar = async () => {
     try {
-      await axios.post("/api/update-prices", updatedParts);
-      alert("✔️ Fiyatlar başarıyla kaydedildi!");
-    } catch {
-      alert("❌ Fiyat kaydedilemedi!");
+      const res = await axios.get("/api/brands");
+      setFiyatlar(res.data || []);
+    } catch (error) {
+      console.error("Fiyatları alırken hata oluştu:", error);
     }
   };
 
-  const chartData = {
-    labels: ["Fiyat Sorgulama", "Randevu Alımı"],
-    datasets: [
-      {
-        label: "Toplam",
-        data: [fiyatBakmaSayisi, randevuSayisi],
-        backgroundColor: ["#60a5fa", "#34d399"]
-      }
-    ]
+  const handleOranChange = (e) => {
+    setOran(parseFloat(e.target.value));
+  };
+
+  const handleApplyOran = () => {
+    const guncellenmisFiyatlar = fiyatlar.map((item) => ({
+      ...item,
+      fiyat: (item.fiyat * (1 + oran / 100)).toFixed(2),
+    }));
+    setFiyatlar(guncellenmisFiyatlar);
+  };
+
+  const handleSave = async () => {
+    try {
+      await axios.post("/api/update-prices", fiyatlar);
+      alert("✅ Fiyatlar başarıyla kaydedildi!");
+    } catch (error) {
+      console.error("Fiyat kaydederken hata:", error);
+      alert("❌ Fiyatlar kaydedilemedi!");
+    }
   };
 
   return (
-    <div className="p-8">
-      <div className="flex gap-4 mb-6">
-        <button onClick={() => setActiveTab("dashboard")} className={`px-4 py-2 ${activeTab === "dashboard" ? "bg-blue-600 text-white" : "bg-gray-200"}`}>
-          Dashboard
+    <div className="p-6">
+      <h2 className="text-2xl font-bold mb-6">Admin Panel - Fiyat Düzenleme</h2>
+
+      <div className="flex gap-4 mb-4">
+        <input
+          type="number"
+          value={oran}
+          onChange={handleOranChange}
+          placeholder="% Artış/İndirim"
+          className="border p-2 rounded w-40"
+        />
+        <button
+          onClick={handleApplyOran}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          Oranı Uygula
         </button>
-        <button onClick={() => setActiveTab("fiyat")} className={`px-4 py-2 ${activeTab === "fiyat" ? "bg-blue-600 text-white" : "bg-gray-200"}`}>
-          Fiyat Düzenleme
+        <button
+          onClick={handleSave}
+          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-700"
+        >
+          Kaydet
         </button>
       </div>
 
-      {activeTab === "dashboard" && (
-        <div>
-          <h2 className="text-2xl font-bold mb-4">İstatistikler</h2>
-          <Bar data={chartData} />
-        </div>
-      )}
-
-      {activeTab === "fiyat" && (
-        <div>
-          <h2 className="text-2xl font-bold mb-4">Parça Fiyat Düzenle</h2>
-          <table className="w-full border-collapse mb-4">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border p-2">Kategori</th>
-                <th className="border p-2">Ürün</th>
-                <th className="border p-2">Birim</th>
-                <th className="border p-2">Fiyat (TL)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {parts.map((part, index) => (
-                <tr key={index}>
-                  <td className="border p-2">{part.kategori}</td>
-                  <td className="border p-2">{part.urun_tip}</td>
-                  <td className="border p-2">{part.birim}</td>
-                  <td className="border p-2">
-                    <input
-                      type="number"
-                      value={part.fiyat}
-                      onChange={(e) => handlePriceChange(index, e.target.value)}
-                      className="border p-1 w-24"
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <button onClick={handleSavePrices} className="bg-green-600 text-white px-4 py-2 rounded">
-            Kaydet
-          </button>
-        </div>
-      )}
+      <table className="w-full border-collapse mt-6">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="border p-2">Parça/Kategori</th>
+            <th className="border p-2">Fiyat (TL)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {fiyatlar.map((item, index) => (
+            <tr key={index}>
+              <td className="border p-2">{item}</td>
+              <td className="border p-2">{/* Buraya detaylı fiyat bilgileri eklenecek */}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };
