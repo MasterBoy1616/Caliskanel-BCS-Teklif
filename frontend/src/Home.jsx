@@ -13,7 +13,7 @@ const Home = () => {
     disk: false,
     silecek: false,
   });
-  const [userData, setUserData] = useState({
+  const [formData, setFormData] = useState({
     adSoyad: "",
     plaka: ""
   });
@@ -30,9 +30,7 @@ const Home = () => {
 
   useEffect(() => {
     if (selectedBrand && selectedModel) {
-      axios.get(`/api/parts?brand=${selectedBrand}&model=${selectedModel}`).then((res) => {
-        setParts(res.data);
-      });
+      axios.get(`/api/parts?brand=${selectedBrand}&model=${selectedModel}`).then((res) => setParts(res.data));
     }
   }, [selectedBrand, selectedModel]);
 
@@ -50,114 +48,142 @@ const Home = () => {
   };
 
   const handlePdfDownload = () => {
-    generatePdf(userData, selectedBrand, selectedModel, parts, selectedExtras);
+    if (!formData.adSoyad || !formData.plaka) {
+      alert("Lütfen Ad Soyad ve Plaka bilgisini doldurunuz!");
+      return;
+    }
+    const selectedParts = [...parts.baseParts];
+    Object.keys(selectedExtras).forEach(key => {
+      if (selectedExtras[key]) {
+        selectedParts.push(...parts.optional[key]);
+      }
+    });
+    selectedParts.push(parts.labor);
+
+    generatePdf(formData, calculateTotal(), selectedParts);
   };
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-4">Periyodik Bakım Fiyatı Al</h1>
+    <div className="app-background">
+      <div className="app-container">
+        <h1 className="text-3xl font-bold text-center mb-6">Çalışkanel Bosch Car Servis</h1>
 
-      <div className="selectors mb-4">
-        <select value={selectedBrand} onChange={(e) => {setSelectedBrand(e.target.value); setSelectedModel(""); setParts(null);}} className="border p-2 rounded">
-          <option value="">Marka Seçiniz</option>
-          {brands.map((brand) => (
-            <option key={brand} value={brand}>{brand}</option>
-          ))}
-        </select>
+        <div className="selectors flex flex-col md:flex-row justify-center items-center mb-6 gap-4">
+          <select
+            value={selectedBrand}
+            onChange={(e) => {
+              setSelectedBrand(e.target.value);
+              setSelectedModel("");
+              setParts(null);
+            }}
+            className="border p-2 rounded"
+          >
+            <option value="">Marka Seç</option>
+            {brands.map((b) => (
+              <option key={b} value={b}>{b}</option>
+            ))}
+          </select>
 
-        <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} className="border p-2 rounded" disabled={!selectedBrand}>
-          <option value="">Model Seçiniz</option>
-          {models.map((model) => (
-            <option key={model} value={model}>{model}</option>
-          ))}
-        </select>
-      </div>
+          <select
+            value={selectedModel}
+            onChange={(e) => setSelectedModel(e.target.value)}
+            disabled={!selectedBrand}
+            className="border p-2 rounded"
+          >
+            <option value="">Model Seç</option>
+            {models.map((m) => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+        </div>
 
-      {parts && (
-        <>
-          <table>
-            <thead>
-              <tr>
-                <th>Kategori</th>
-                <th>Ürün</th>
-                <th>Birim</th>
-                <th>Fiyat (TL)</th>
-                <th>Toplam (TL)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {parts.baseParts.map((p, idx) => (
-                <tr key={idx}>
-                  <td>{p.kategori}</td>
-                  <td>{p.urun_tip}</td>
-                  <td>{p.birim}</td>
-                  <td>{p.fiyat}</td>
-                  <td>{p.toplam}</td>
+        {parts && (
+          <>
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-200">
+                  <th>Kategori</th>
+                  <th>Ürün</th>
+                  <th>Birim</th>
+                  <th>Fiyat (TL)</th>
+                  <th>Toplam (TL)</th>
                 </tr>
-              ))}
-              {Object.keys(parts.optional).map((key) =>
-                selectedExtras[key] && parts.optional[key].map((p, idx) => (
-                  <tr key={key + idx}>
+              </thead>
+              <tbody>
+                {parts.baseParts.map((p, i) => (
+                  <tr key={i}>
                     <td>{p.kategori}</td>
                     <td>{p.urun_tip}</td>
                     <td>{p.birim}</td>
                     <td>{p.fiyat}</td>
                     <td>{p.toplam}</td>
                   </tr>
-                ))
-              )}
-              <tr className="font-bold">
-                <td>{parts.labor.kategori}</td>
-                <td>{parts.labor.urun_tip}</td>
-                <td>{parts.labor.birim}</td>
-                <td>{parts.labor.fiyat}</td>
-                <td>{parts.labor.toplam}</td>
-              </tr>
-            </tbody>
-          </table>
+                ))}
+                {Object.entries(parts.optional).map(([key, items]) =>
+                  selectedExtras[key] ? items.map((p, i) => (
+                    <tr key={`${key}-${i}`}>
+                      <td>{p.kategori}</td>
+                      <td>{p.urun_tip}</td>
+                      <td>{p.birim}</td>
+                      <td>{p.fiyat}</td>
+                      <td>{p.toplam}</td>
+                    </tr>
+                  )) : null
+                )}
+                <tr className="font-bold">
+                  <td>{parts.labor.kategori}</td>
+                  <td>{parts.labor.urun_tip}</td>
+                  <td>{parts.labor.birim}</td>
+                  <td>{parts.labor.fiyat}</td>
+                  <td>{parts.labor.toplam}</td>
+                </tr>
+              </tbody>
+            </table>
 
-          <div className="text-2xl font-bold text-center mt-6">Toplam: {calculateTotal()} TL (KDV Dahil)</div>
-        </>
-      )}
+            <div className="text-2xl text-center font-bold my-6">
+              Toplam Tutar (KDV Dahil): {calculateTotal()} TL
+            </div>
 
-      {parts && (
-        <div className="mt-6">
-          <div className="extras mb-4">
-            {["balata", "disk", "silecek"].map((extra) => (
-              <label key={extra} className="mr-4">
-                <input
-                  type="checkbox"
-                  checked={selectedExtras[extra]}
-                  onChange={() => setSelectedExtras((prev) => ({ ...prev, [extra]: !prev[extra] }))}
-                />{" "}
-                {extra.toUpperCase()}
-              </label>
-            ))}
-          </div>
+            <div className="extras flex justify-center gap-6 mb-6">
+              {["balata", "disk", "silecek"].map(opt => (
+                <label key={opt}>
+                  <input
+                    type="checkbox"
+                    checked={selectedExtras[opt]}
+                    onChange={() => setSelectedExtras(prev => ({ ...prev, [opt]: !prev[opt] }))}
+                  />
+                  {" "}{opt.toUpperCase()}
+                </label>
+              ))}
+            </div>
 
-          <div className="flex gap-4">
-            <input
-              type="text"
-              name="adSoyad"
-              placeholder="Ad Soyad"
-              className="border p-2 rounded"
-              value={userData.adSoyad}
-              onChange={(e) => setUserData({ ...userData, adSoyad: e.target.value })}
-            />
-            <input
-              type="text"
-              name="plaka"
-              placeholder="Plaka"
-              className="border p-2 rounded"
-              value={userData.plaka}
-              onChange={(e) => setUserData({ ...userData, plaka: e.target.value })}
-            />
-            <button onClick={handlePdfDownload} className="button">
-              📄 Teklifi PDF Al
-            </button>
-          </div>
-        </div>
-      )}
+            <div className="flex flex-col md:flex-row justify-center gap-4">
+              <input
+                type="text"
+                name="adSoyad"
+                placeholder="Ad Soyad"
+                value={formData.adSoyad}
+                onChange={(e) => setFormData({ ...formData, adSoyad: e.target.value })}
+                className="border p-2 rounded"
+              />
+              <input
+                type="text"
+                name="plaka"
+                placeholder="Plaka"
+                value={formData.plaka}
+                onChange={(e) => setFormData({ ...formData, plaka: e.target.value })}
+                className="border p-2 rounded"
+              />
+              <button
+                onClick={handlePdfDownload}
+                className="button bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-700"
+              >
+                📄 Teklifi PDF Olarak Al
+              </button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 };
