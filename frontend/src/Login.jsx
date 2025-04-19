@@ -1,43 +1,45 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 const Login = ({ setIsLoggedIn }) => {
-  const [form, setForm] = useState({ username: "", password: "" });
-  const navigate = useNavigate();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleLogin = (e) => {
     e.preventDefault();
-    if (form.username === "admin" && form.password === "wq27t9mf") {
+    if (username === "admin" && password === "wq27t9mf") {
       setIsLoggedIn(true);
-      navigate("/admin");
     } else {
-      alert("❌ Kullanıcı adı veya şifre yanlış!");
+      alert("❌ Hatalı kullanıcı adı veya şifre!");
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen">
-      <h2 className="text-2xl mb-4">Admin Giriş</h2>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-80">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <form
+        onSubmit={handleLogin}
+        className="flex flex-col bg-white p-8 rounded shadow-md gap-4 w-80"
+      >
+        <h2 className="text-2xl font-bold text-center mb-4">Admin Giriş</h2>
         <input
           type="text"
           placeholder="Kullanıcı Adı"
-          name="username"
-          value={form.username}
-          onChange={(e) => setForm({ ...form, username: e.target.value })}
-          className="border p-2"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
           required
+          className="border p-2 rounded"
         />
         <input
           type="password"
           placeholder="Şifre"
-          name="password"
-          value={form.password}
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
-          className="border p-2"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           required
+          className="border p-2 rounded"
         />
-        <button type="submit" className="bg-blue-500 text-white py-2 rounded">
+        <button
+          type="submit"
+          className="bg-blue-600 text-white py-2 rounded hover:bg-blue-800"
+        >
           Giriş Yap
         </button>
       </form>
