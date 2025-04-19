@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React, { useState, useEffect } from "react";
 import { generatePdf } from "./pdfGenerator";
+import axios from "axios";
 
 const Home = () => {
   const [brands, setBrands] = useState([]);
@@ -48,139 +48,112 @@ const Home = () => {
     return total;
   };
 
-  const handleGeneratePdf = () => {
-    if (!formData.adSoyad || !formData.plaka) {
-      alert("Ad Soyad ve Plaka bilgilerini doldurun.");
-      return;
-    }
-    generatePdf(formData, selectedBrand, selectedModel, parts, selectedExtras);
-    axios.post("/api/log/teklifal");
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!parts) return;
+    generatePdf(formData, parts, selectedExtras, calculateTotal());
   };
 
   return (
     <div className="app-background">
       <div className="app-container">
-        <h1 className="text-3xl font-bold text-center mb-8">Çalışkanel Bosch Car Servis</h1>
-
-        <div className="selectors flex flex-wrap gap-4 justify-center mb-6">
-          <select
-            className="border p-2 rounded"
-            value={selectedBrand}
-            onChange={(e) => {
+        <h2 className="text-3xl font-bold mb-6">Çalışkanel Bosch Car Servis</h2>
+        
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="selectors flex flex-wrap gap-4">
+            <select value={selectedBrand} onChange={(e) => {
               setSelectedBrand(e.target.value);
               setSelectedModel("");
               setParts(null);
-            }}
-          >
-            <option value="">Marka Seçin</option>
-            {brands.map((b, i) => (
-              <option key={i} value={b}>{b}</option>
-            ))}
-          </select>
+            }} className="border p-2 rounded">
+              <option value="">Marka Seç</option>
+              {brands.map((b) => (
+                <option key={b} value={b}>{b}</option>
+              ))}
+            </select>
 
-          <select
-            className="border p-2 rounded"
-            value={selectedModel}
-            onChange={(e) => setSelectedModel(e.target.value)}
-            disabled={!selectedBrand}
-          >
-            <option value="">Model Seçin</option>
-            {models.map((m, i) => (
-              <option key={i} value={m}>{m}</option>
-            ))}
-          </select>
-        </div>
+            <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)}
+              disabled={!selectedBrand} className="border p-2 rounded">
+              <option value="">Model Seç</option>
+              {models.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
 
-        <div className="extras mb-6 flex justify-center gap-6">
-          {["balata", "disk", "silecek"].map((key) => (
-            <label key={key}>
-              <input
-                type="checkbox"
-                checked={selectedExtras[key]}
-                onChange={() =>
-                  setSelectedExtras(prev => ({ ...prev, [key]: !prev[key] }))
-                }
-              /> {key.toUpperCase()}
-            </label>
-          ))}
-        </div>
+            <input type="text" name="adSoyad" placeholder="Ad Soyad" value={formData.adSoyad}
+              onChange={(e) => setFormData({ ...formData, adSoyad: e.target.value })}
+              className="border p-2 rounded" required />
+            <input type="text" name="plaka" placeholder="Plaka" value={formData.plaka}
+              onChange={(e) => setFormData({ ...formData, plaka: e.target.value })}
+              className="border p-2 rounded" required />
+          </div>
 
-        {parts && (
-          <>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-200">
-                  <th>Kategori</th>
-                  <th>Ürün</th>
-                  <th>Adet</th>
-                  <th>Birim Fiyat (TL)</th>
-                  <th>Toplam (TL)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {parts.baseParts.map((item, idx) => (
-                  <tr key={idx}>
-                    <td>{item.kategori}</td>
-                    <td>{item.urun_tip}</td>
-                    <td>{item.birim}</td>
-                    <td>{item.fiyat}</td>
-                    <td>{item.toplam}</td>
+          {parts && (
+            <>
+              <table className="mt-4 overflow-x-auto block">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="border p-2">Kategori</th>
+                    <th className="border p-2">Ürün</th>
+                    <th className="border p-2">Birim</th>
+                    <th className="border p-2">Fiyat (TL)</th>
+                    <th className="border p-2">Toplam (TL)</th>
                   </tr>
-                ))}
-                {Object.entries(parts.optional).map(([key, items]) =>
-                  selectedExtras[key] &&
-                  items.map((item, idx) => (
-                    <tr key={`${key}-${idx}`}>
-                      <td>{item.kategori}</td>
-                      <td>{item.urun_tip}</td>
-                      <td>{item.birim}</td>
-                      <td>{item.fiyat}</td>
-                      <td>{item.toplam}</td>
+                </thead>
+                <tbody>
+                  {parts.baseParts.map((p, i) => (
+                    <tr key={i}>
+                      <td className="border p-2">{p.kategori}</td>
+                      <td className="border p-2">{p.urun_tip}</td>
+                      <td className="border p-2">{p.birim}</td>
+                      <td className="border p-2">{p.fiyat}</td>
+                      <td className="border p-2">{p.toplam}</td>
                     </tr>
-                  ))
-                )}
-                <tr className="font-bold">
-                  <td>{parts.labor.kategori}</td>
-                  <td>{parts.labor.urun_tip}</td>
-                  <td>{parts.labor.birim}</td>
-                  <td>{parts.labor.fiyat}</td>
-                  <td>{parts.labor.toplam}</td>
-                </tr>
-              </tbody>
-            </table>
+                  ))}
+                  {Object.entries(parts.optional).map(([key, items]) =>
+                    selectedExtras[key]
+                      ? items.map((p, i) => (
+                        <tr key={`${key}-${i}`}>
+                          <td className="border p-2">{p.kategori}</td>
+                          <td className="border p-2">{p.urun_tip}</td>
+                          <td className="border p-2">{p.birim}</td>
+                          <td className="border p-2">{p.fiyat}</td>
+                          <td className="border p-2">{p.toplam}</td>
+                        </tr>
+                      ))
+                      : null
+                  )}
+                  <tr className="font-bold">
+                    <td className="border p-2">{parts.labor.kategori}</td>
+                    <td className="border p-2">{parts.labor.urun_tip}</td>
+                    <td className="border p-2">{parts.labor.birim}</td>
+                    <td className="border p-2">{parts.labor.fiyat}</td>
+                    <td className="border p-2">{parts.labor.toplam}</td>
+                  </tr>
+                </tbody>
+              </table>
 
-            <div className="text-center mt-6">
-              <p className="text-2xl font-bold text-green-600 mb-2">
-                Toplam: {calculateTotal().toLocaleString()} TL (KDV Dahil)
-              </p>
-
-              <div className="flex flex-col items-center gap-3 mt-4">
-                <input
-                  type="text"
-                  name="adSoyad"
-                  placeholder="Ad Soyad"
-                  className="border p-2 rounded w-64"
-                  value={formData.adSoyad}
-                  onChange={(e) => setFormData(prev => ({ ...prev, adSoyad: e.target.value }))}
-                />
-                <input
-                  type="text"
-                  name="plaka"
-                  placeholder="Plaka"
-                  className="border p-2 rounded w-64"
-                  value={formData.plaka}
-                  onChange={(e) => setFormData(prev => ({ ...prev, plaka: e.target.value }))}
-                />
-                <button
-                  className="button bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded text-white font-bold mt-2"
-                  onClick={handleGeneratePdf}
-                >
-                  📄 Teklifi PDF Olarak Al
-                </button>
+              <div className="text-2xl font-semibold text-right mt-6">
+                Toplam Tutar: {calculateTotal().toLocaleString()} TL
               </div>
-            </div>
-          </>
-        )}
+            </>
+          )}
+
+          <div className="extras flex gap-4 mt-4">
+            {["balata", "disk", "silecek"].map((opt) => (
+              <label key={opt} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={selectedExtras[opt]}
+                  onChange={() => setSelectedExtras((prev) => ({ ...prev, [opt]: !prev[opt] }))}
+                />
+                {opt.toUpperCase()}
+              </label>
+            ))}
+          </div>
+
+          <button type="submit" className="button mt-4 self-center">📄 Teklif PDF Al</button>
+        </form>
       </div>
     </div>
   );
