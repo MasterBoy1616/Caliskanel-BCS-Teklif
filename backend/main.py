@@ -1,18 +1,35 @@
-from fastapi import FastAPI, Request, Body
+from fastapi import FastAPI, Body, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import os
 import json
 
 app = FastAPI()
 
+# CORS izinleri (opsiyonel, lazım olabilir)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Excel dosyası yolu
 excel_path = "backend/yeni_bosch_fiyatlari.xlsm"
 sheets = pd.read_excel(excel_path, sheet_name=None)
 
+# Log dosyası path'leri
+FIYAT_LOG_PATH = "backend/logs/fiyat_bakma_logu.json"
+RANDEVU_LOG_PATH = "backend/logs/randevu_logu.json"
+
+# Yardımcı Fonksiyonlar
 def parse_miktar(birim_str):
     try:
-        if pd.isna(birim_str): return 1
+        if pd.isna(birim_str):
+            return 1
         value = str(birim_str).split()[0].replace(",", ".")
         return float(value)
     except:
@@ -21,8 +38,10 @@ def parse_miktar(birim_str):
 def parse_row(row):
     fiyat = row.get("Tavsiye Edilen Satış Fiyatı", 0)
     birim = row.get("Birim", "1")
-    if pd.isna(fiyat): fiyat = 0
-    if pd.isna(birim): birim = "1"
+    if pd.isna(fiyat):
+        fiyat = 0
+    if pd.isna(birim):
+        birim = "1"
     miktar = parse_miktar(birim)
     toplam = round(fiyat * miktar)
     return {
@@ -33,6 +52,7 @@ def parse_row(row):
         "toplam": toplam
     }
 
+# API Endpointleri
 @app.get("/api/brands")
 def get_brands():
     df = sheets["02_TavsiyeEdilenBakımListesi"]
@@ -73,10 +93,13 @@ def get_parts(brand: str, model: str):
     }
 
     labor_match = df[(df["KATEGORİ"] == "İşçilik") & (df["ÜRÜN/TİP"].str.contains("Periyodik", na=False))]
-    if not labor_match.empty:
-        labor = parse_row(labor_match.iloc[0])
-    else:
-        labor = {"kategori": "İşçilik", "urun_tip": "Periyodik Bakım", "birim": 1, "fiyat": 0, "toplam": 0}
+    labor = parse_row(labor_match.iloc[0]) if not labor_match.empty else {
+        "kategori": "İşçilik",
+        "urun_tip": "Periyodik Bakım",
+        "birim": 1,
+        "fiyat": 0,
+        "toplam": 0
+    }
 
     return {
         "baseParts": base_parts,
@@ -84,9 +107,21 @@ def get_parts(brand: str, model: str):
         "labor": labor
     }
 
-# Frontend build'i mount et
-app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
+@app.post("/api/log/fiyatbakma")
+async def fiyat_bakma_log(request: Request):
+    data = await request.json()
+    logs = []
+    if os.path.exists(FIYAT_LOG_PATH):
+        with open(FIYAT_LOG_PATH, "r", encoding="utf-8") as f:
+            logs = json.load(f)
+    logs.append(data)
+    with open(FIYAT_LOG_PATH, "w", encoding="utf-8") as f:
+        json.dump(logs, f, ensure_ascii=False, indent=2)
+    return {"success": True}
 
-@app.get("/{full_path:path}")
-async def serve_spa(full_path: str):
-    return FileResponse("frontend/dist/index.html")
+@app.post("/api/update-prices")
+async def update_prices(request: Request):
+    data = await request.json()
+    save_path = "backend/logs/guncel_fiyatlar.json"
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+   
