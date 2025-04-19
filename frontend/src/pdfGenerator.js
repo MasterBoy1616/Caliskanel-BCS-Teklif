@@ -1,53 +1,58 @@
-// frontend/src/pdfGenerator.js
-
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 
-export const generatePdf = (formData, brand, model, parts, selectedExtras) => {
+export const generatePdf = (formData, selectedBrand, selectedModel, parts, extras) => {
   const doc = new jsPDF();
 
-  // Başlık ve logolar
-  doc.addImage("/logo-caliskanel.png", "PNG", 10, 10, 40, 20);
-  doc.addImage("/logo-bosch.png", "PNG", 160, 10, 40, 20);
+  // Logoları çizelim
+  const boschLogo = "/logo-bosch.png";
+  const caliskanelLogo = "/logo-caliskanel.png";
 
-  doc.setFontSize(16);
-  doc.text("Çalışkanel Bosch Car Servis - Teklif", 70, 40);
+  doc.addImage(boschLogo, "PNG", 15, 10, 40, 15);
+  doc.addImage(caliskanelLogo, "PNG", 150, 10, 40, 15);
 
-  // Kullanıcı bilgileri
+  doc.setFontSize(18);
+  doc.text("Çalışkanel Bosch Car Servisi", 70, 35, { align: "center" });
+
   doc.setFontSize(12);
-  doc.text(`Ad Soyad: ${formData.adSoyad}`, 10, 60);
-  doc.text(`Telefon: ${formData.telefon}`, 10, 70);
-  doc.text(`Plaka: ${formData.plaka}`, 10, 80);
-  doc.text(`Araç: ${brand} ${model}`, 10, 90);
-  doc.text(`Randevu Tarihi: ${formData.randevuTarihi}`, 10, 100);
+  doc.text(`Müşteri: ${formData.adSoyad}`, 14, 50);
+  doc.text(`Telefon: ${formData.telefon}`, 14, 58);
+  doc.text(`Plaka: ${formData.plaka}`, 14, 66);
+  doc.text(`Araç: ${selectedBrand} ${selectedModel}`, 14, 74);
+  doc.text(`Randevu Tarihi: ${new Date(formData.randevuTarihi).toLocaleString('tr-TR')}`, 14, 82);
 
-  // Parça listesi
   const rows = [];
 
-  parts.baseParts.forEach(p => {
-    rows.push([p.kategori, p.urun_tip, p.birim, p.fiyat, p.toplam]);
+  parts.baseParts.forEach(part => {
+    rows.push([part.kategori, part.urun_tip, part.birim, `${part.fiyat} TL`, `${part.toplam} TL`]);
   });
 
   Object.entries(parts.optional).forEach(([key, items]) => {
-    if (selectedExtras[key]) {
-      items.forEach(p => {
-        rows.push([p.kategori, p.urun_tip, p.birim, p.fiyat, p.toplam]);
+    if (extras[key]) {
+      items.forEach(part => {
+        rows.push([part.kategori, part.urun_tip, part.birim, `${part.fiyat} TL`, `${part.toplam} TL`]);
       });
     }
   });
 
-  rows.push([parts.labor.kategori, parts.labor.urun_tip, parts.labor.birim, parts.labor.fiyat, parts.labor.toplam]);
+  rows.push([parts.labor.kategori, parts.labor.urun_tip, parts.labor.birim, `${parts.labor.fiyat} TL`, `${parts.labor.toplam} TL`]);
 
-  doc.autoTable({
+  autoTable(doc, {
+    startY: 90,
     head: [["Kategori", "Ürün", "Birim", "Fiyat (TL)", "Toplam (TL)"]],
     body: rows,
-    startY: 120,
+    styles: { font: "helvetica", fontStyle: "normal", overflow: "linebreak", cellPadding: 2 },
+    theme: 'striped',
+    headStyles: { fillColor: [41, 128, 185] },
   });
 
-  const toplamTutar = rows.reduce((sum, row) => sum + row[4], 0);
+  const total = rows.reduce((acc, row) => {
+    const toplam = parseFloat(row[4]?.replace(" TL", "").replace(",", "."));
+    return acc + (isNaN(toplam) ? 0 : toplam);
+  }, 0);
 
   doc.setFontSize(14);
-  doc.text(`Toplam Tutar (KDV Dahil): ${toplamTutar} TL`, 10, doc.lastAutoTable.finalY + 20);
+  doc.text(`Toplam Tutar: ${total} TL (KDV Dahil)`, 14, doc.previousAutoTable.finalY + 20);
 
-  doc.save(`teklif_${formData.plaka}.pdf`);
+  doc.save(`teklif_${formData.plaka || "arac"}.pdf`);
 };
