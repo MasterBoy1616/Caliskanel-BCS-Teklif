@@ -1,64 +1,73 @@
-/* Ana arka plan */
+/* frontend/src/App.css */
+
 body {
-  font-family: Arial, sans-serif;
+  font-family: 'Arial', sans-serif;
   background: linear-gradient(to bottom right, #f5f5f5, #d9e7ff);
   margin: 0;
   padding: 0;
-  min-height: 100vh;
 }
 
-/* Ana konteyner */
-.app-container {
-  max-width: 1000px;
-  margin: auto;
-  background: white;
-  padding: 24px;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+nav {
+  background-color: #0e3c7e;
+  padding: 1rem;
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
 }
 
-/* Seçim kutuları */
-.selectors select {
-  margin: 0 10px 20px 0;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-}
-
-/* Tablo */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-}
-
-table th, table td {
-  border: 1px solid #ccc;
-  padding: 8px 12px;
-  text-align: left;
-}
-
-/* Ekstra parçalar */
-.extras label {
-  margin-right: 15px;
+nav a {
+  color: white;
   font-weight: bold;
+  text-decoration: none;
 }
 
-/* Butonlar */
-button, .button {
+nav a:hover {
+  text-decoration: underline;
+}
+
+.container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 20px;
+}
+
+.button {
   background-color: #2563eb;
   color: white;
-  padding: 8px 16px;
+  padding: 10px 20px;
   border-radius: 8px;
+  font-weight: bold;
   border: none;
-  cursor: pointer;
-  transition: background-color 0.3s;
 }
 
-button:hover, .button:hover {
+.button:hover {
   background-color: #1d4ed8;
 }
 
-input, select {
-  font-family: inherit;
+h2 {
+  font-size: 28px;
+  font-weight: bold;
+}
+
+select, input {
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  width: 100%;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+th, td {
+  padding: 10px;
+  border: 1px solid #ccc;
+}
+
+th {
+  background-color: #f0f0f0;
 }
