@@ -1,31 +1,35 @@
-import jsPDF from "jspdf";
-import "jspdf-autotable";
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import boschLogo from '/logo-bosch.png';
+import caliskanelLogo from '/logo-caliskanel.png';
 
-export function generatePDF({ customerName, plate, brand, model, parts, extras, totalPrice }) {
+const generatePDF = (parts, formData) => {
   const doc = new jsPDF();
+  doc.addFileToVFS("Roboto-Regular-normal.ttf", "..."); // base64 font verisi gerekli
+  doc.addFont("Roboto-Regular-normal.ttf", "Roboto", "normal");
+  doc.setFont("Roboto");
 
-  doc.setFont("Helvetica", "bold");
-  doc.setFontSize(18);
-  doc.text("Çalışkanel Bosch Car Servis", 20, 20);
+  doc.text('ÇALIŞKANEL BOSCH CAR SERVİS - TEKLİF FORMU', 20, 20);
+  doc.text(`İsim Soyisim: ${formData.isim}`, 20, 30);
+  doc.text(`Plaka: ${formData.plaka}`, 20, 38);
 
-  doc.setFontSize(12);
-  doc.text(`İsim Soyisim: ${customerName}`, 20, 40);
-  doc.text(`Plaka: ${plate}`, 20, 50);
-  doc.text(`Araç: ${brand} ${model}`, 20, 60);
-
-  const tableData = [
-    ...parts.map(part => [part.name, `${part.price.toLocaleString("tr-TR")} TL`]),
-    ...extras.map(extra => [extra.name, `${extra.price.toLocaleString("tr-TR")} TL`]),
-  ];
+  const rows = parts.map(p => [p.KATEGORI, p.URUN, p.BIRIM, `${p.FIYAT} TL`, `${p.FIYAT * p.BIRIM} TL`]);
 
   doc.autoTable({
-    startY: 70,
-    head: [["Parça", "Fiyat"]],
-    body: tableData,
+    startY: 50,
+    head: [['Kategori', 'Parça', 'Birim', 'Fiyat', 'Toplam']],
+    body: rows,
+    styles: { font: "Roboto" }
   });
 
-  doc.setFontSize(14);
-  doc.text(`Toplam Tutar: ${totalPrice.toLocaleString("tr-TR")} TL`, 20, doc.previousAutoTable.finalY + 20);
+  const toplam = parts.reduce((sum, p) => sum + p.FIYAT * p.BIRIM, 0);
+  doc.text(`TOPLAM: ${toplam.toLocaleString('tr-TR')} TL (KDV DAHİL)`, 20, doc.lastAutoTable.finalY + 10);
 
-  doc.save(`teklif_${plate}.pdf`);
-}
+  doc.save(`teklif_${formData.plaka}.pdf`);
+};
+
+export default generatePDF;
+
+
+// File: public/logo-bosch.png + logo-caliskanel.png
+// Doğru klasörde yüklendiğinden emin olun ve yukarıdaki yolları kullanın.
