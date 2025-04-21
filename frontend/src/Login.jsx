@@ -1,42 +1,55 @@
+// frontend/src/Login.jsx
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const Login = ({ setIsLoggedIn }) => {
+const Login = () => {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
-  const [form, setForm] = useState({ username: "", password: "" });
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (form.username === "admin" && form.password === "1234") {
-      setIsLoggedIn(true);
+    if (username === "admin" && password === "1234") {
       navigate("/admin");
     } else {
-      alert("Hatalı kullanıcı adı veya şifre!");
+      setError("Kullanıcı adı veya şifre hatalı!");
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-      <form onSubmit={handleLogin} className="bg-white p-6 rounded shadow-md w-80">
-        <h2 className="text-2xl mb-4">Admin Giriş</h2>
-        <input
-          type="text"
-          placeholder="Kullanıcı Adı"
-          value={form.username}
-          onChange={(e) => setForm({ ...form, username: e.target.value })}
-          className="border p-2 w-full mb-4"
-        />
-        <input
-          type="password"
-          placeholder="Şifre"
-          value={form.password}
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
-          className="border p-2 w-full mb-4"
-        />
-        <button type="submit" className="bg-blue-600 text-white w-full py-2 rounded">
-          Giriş Yap
-        </button>
-      </form>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+      <div className="bg-white p-8 rounded shadow-md w-80">
+        <h1 className="text-2xl font-bold mb-6 text-center">🔒 Admin Girişi</h1>
+        <form onSubmit={handleLogin} className="flex flex-col gap-4">
+          <input
+            type="text"
+            placeholder="Kullanıcı Adı"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="border p-2 rounded"
+            required
+          />
+          <input
+            type="password"
+            placeholder="Şifre"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="border p-2 rounded"
+            required
+          />
+          {error && (
+            <div className="text-red-500 text-sm text-center">{error}</div>
+          )}
+          <button
+            type="submit"
+            className="bg-blue-500 hover:bg-blue-700 text-white py-2 rounded"
+          >
+            Giriş Yap
+          </button>
+        </form>
+      </div>
     </div>
   );
 };
