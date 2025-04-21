@@ -1,51 +1,30 @@
-.app-background {
-  background: linear-gradient(to bottom right, #f5f5f5, #d9e7ff);
-  min-height: 100vh;
-  padding: 20px;
+body {
   font-family: Arial, sans-serif;
+  margin: 0;
+  background: linear-gradient(to bottom right, #f5f5f5, #d9e7ff);
+}
+
+.app-background {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: start;
+  padding: 20px;
 }
 
 .app-container {
-  max-width: 1000px;
-  margin: auto;
   background: white;
-  padding: 24px;
   border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.selectors select, input {
-  margin: 0 10px 10px 0;
-  padding: 8px;
-  min-width: 160px;
-}
-
-table {
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
+  max-width: 1000px;
 }
 
-table th, table td {
-  border: 1px solid #ccc;
-  padding: 6px 10px;
-  text-align: left;
-}
-
-.extras label {
-  margin-right: 15px;
-  font-weight: bold;
+select, input, button {
+  font-family: inherit;
 }
 
 button {
-  background-color: #2563eb;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 8px;
   cursor: pointer;
-  margin-top: 20px;
-}
-
-button:hover {
-  background-color: #1d4ed8;
 }
