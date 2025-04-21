@@ -1,55 +1,55 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-export const generatePdf = (formData, selectedBrand, selectedModel, parts, selectedExtras) => {
+export const generatePdf = (brand, model, parts, selectedExtras) => {
   const doc = new jsPDF();
-
-  // Başlık ve logolar
+  
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
-  doc.text("Çalışkanel Bosch Car Servis", 105, 20, { align: "center" });
-
-  // Kullanıcı bilgileri
+  doc.setFontSize(16);
+  doc.text("Çalışkanel Bosch Car Servis", 20, 20);
+  
   doc.setFontSize(12);
-  doc.text(`Ad Soyad: ${formData.adSoyad}`, 14, 35);
-  doc.text(`Plaka: ${formData.plaka}`, 14, 43);
-  doc.text(`Araç: ${selectedBrand} ${selectedModel}`, 14, 51);
+  doc.text(`Araç: ${brand} ${model}`, 20, 30);
 
-  const allParts = [...parts.baseParts];
-  if (selectedExtras.balata) allParts.push(...(parts.optional.balata || []));
-  if (selectedExtras.disk) allParts.push(...(parts.optional.disk || []));
-  if (selectedExtras.silecek) allParts.push(...(parts.optional.silecek || []));
-  allParts.push(parts.labor);
+  const tableData = [];
 
-  const tableBody = allParts.map((item) => [
-    item.kategori,
-    item.urun_tip,
-    item.birim,
-    `${item.fiyat.toLocaleString()} TL`,
-    `${item.toplam.toLocaleString()} TL`,
+  parts.baseParts.forEach(p => {
+    tableData.push([p.kategori, p.urun_tip, p.birim, `${p.fiyat} ₺`, `${p.toplam} ₺`]);
+  });
+
+  Object.keys(selectedExtras).forEach((key) => {
+    if (selectedExtras[key]) {
+      parts.optional[key].forEach(p => {
+        tableData.push([p.kategori, p.urun_tip, p.birim, `${p.fiyat} ₺`, `${p.toplam} ₺`]);
+      });
+    }
+  });
+
+  tableData.push([
+    parts.labor.kategori,
+    parts.labor.urun_tip,
+    parts.labor.birim,
+    `${parts.labor.fiyat} ₺`,
+    `${parts.labor.toplam} ₺`
   ]);
 
   autoTable(doc, {
-    startY: 60,
-    head: [["Kategori", "Ürün", "Birim", "Fiyat", "Toplam"]],
-    body: tableBody,
-    styles: {
-      font: "helvetica",
-      fontStyle: "normal",
-      fontSize: 10,
-    },
-    headStyles: {
-      fillColor: [41, 128, 185],
-      textColor: 255,
-    },
+    startY: 40,
+    head: [["Kategori", "Ürün", "Birim", "Fiyat (TL)", "Toplam (TL)"]],
+    body: tableData,
   });
 
-  // Toplam yazısı
-  const total = allParts.reduce((acc, item) => acc + item.toplam, 0);
-  doc.setFontSize(14);
-  doc.setFont("helvetica", "bold");
-  doc.text(`Toplam: ${total.toLocaleString()} TL (KDV Dahil)`, 14, doc.lastAutoTable.finalY + 20);
+  const toplam = parts.baseParts.reduce((acc, p) => acc + p.toplam, 0) +
+                  Object.keys(selectedExtras).reduce((acc, key) => {
+                    if (selectedExtras[key]) {
+                      return acc + parts.optional[key].reduce((a, b) => a + b.toplam, 0);
+                    }
+                    return acc;
+                  }, 0) +
+                  parts.labor.toplam;
 
-  // PDF'yi kaydet
-  doc.save(`teklif_${formData.plaka || "arac"}.pdf`);
+  doc.setFontSize(14);
+  doc.text(`Toplam Tutar: ${toplam} ₺ (KDV Dahil)`, 20, doc.lastAutoTable.finalY + 20);
+
+  doc.save(`teklif_${brand}_${model}.pdf`);
 };
