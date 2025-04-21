@@ -1,55 +1,46 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-export const generatePdf = (brand, model, parts, selectedExtras) => {
+export function generatePdf(formData, parts, totalPrice) {
   const doc = new jsPDF();
-  
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text("Çalışkanel Bosch Car Servis", 20, 20);
-  
+
+  // Başlık
+  doc.setFontSize(18);
+  doc.text("Çalışkanel Bosch Car Servis", 105, 20, { align: "center" });
+
+  // Logoları ekle (isteğe bağlı)
+  // doc.addImage('/logo-bosch.png', 'PNG', 10, 10, 30, 15);
+  // doc.addImage('/logo-caliskanel.png', 'PNG', 170, 10, 30, 15);
+
+  // Kullanıcı Bilgileri
   doc.setFontSize(12);
-  doc.text(`Araç: ${brand} ${model}`, 20, 30);
+  doc.text(`Ad Soyad: ${formData.adSoyad}`, 14, 40);
+  doc.text(`Plaka: ${formData.plaka}`, 14, 48);
 
-  const tableData = [];
-
-  parts.baseParts.forEach(p => {
-    tableData.push([p.kategori, p.urun_tip, p.birim, `${p.fiyat} ₺`, `${p.toplam} ₺`]);
-  });
-
-  Object.keys(selectedExtras).forEach((key) => {
-    if (selectedExtras[key]) {
-      parts.optional[key].forEach(p => {
-        tableData.push([p.kategori, p.urun_tip, p.birim, `${p.fiyat} ₺`, `${p.toplam} ₺`]);
-      });
-    }
-  });
-
-  tableData.push([
-    parts.labor.kategori,
-    parts.labor.urun_tip,
-    parts.labor.birim,
-    `${parts.labor.fiyat} ₺`,
-    `${parts.labor.toplam} ₺`
+  // Parçalar Tablosu
+  const tableData = parts.map(p => [
+    p.kategori,
+    p.urun_tip,
+    `${p.birim}`,
+    `${p.fiyat} TL`,
+    `${p.toplam} TL`
   ]);
 
   autoTable(doc, {
-    startY: 40,
     head: [["Kategori", "Ürün", "Birim", "Fiyat (TL)", "Toplam (TL)"]],
     body: tableData,
+    startY: 60,
+    theme: 'striped',
+    headStyles: { fillColor: [41, 128, 185] },
+    styles: { font: "helvetica", fontSize: 10 },
   });
 
-  const toplam = parts.baseParts.reduce((acc, p) => acc + p.toplam, 0) +
-                  Object.keys(selectedExtras).reduce((acc, key) => {
-                    if (selectedExtras[key]) {
-                      return acc + parts.optional[key].reduce((a, b) => a + b.toplam, 0);
-                    }
-                    return acc;
-                  }, 0) +
-                  parts.labor.toplam;
-
+  // Toplam Tutar
+  const finalY = doc.lastAutoTable.finalY || 80;
   doc.setFontSize(14);
-  doc.text(`Toplam Tutar: ${toplam} ₺ (KDV Dahil)`, 20, doc.lastAutoTable.finalY + 20);
+  doc.setTextColor(0, 0, 0);
+  doc.text(`Toplam Tutar: ${totalPrice} TL (KDV Dahil)`, 14, finalY + 20);
 
-  doc.save(`teklif_${brand}_${model}.pdf`);
-};
+  // PDF Kaydet
+  doc.save(`teklif_${formData.plaka}.pdf`);
+}
