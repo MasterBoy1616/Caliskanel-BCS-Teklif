@@ -2,46 +2,45 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function Login() {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({ username: "", password: "" });
-  const [error, setError] = useState("");
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (formData.username === "admin" && formData.password === "1234") {
+    if (username === "admin" && password === "1234") {
       navigate("/admin");
     } else {
-      setError("Geçersiz kullanıcı adı veya şifre");
+      alert("❌ Kullanıcı adı veya şifre yanlış!");
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <h1 className="text-3xl font-bold mb-6">Admin Girişi</h1>
-      <form onSubmit={handleLogin} className="flex flex-col gap-4 w-80 bg-white p-6 rounded shadow">
-        <input
-          type="text"
-          name="username"
-          placeholder="Kullanıcı Adı"
-          value={formData.username}
-          onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-          required
-          className="p-2 border"
-        />
-        <input
-          type="password"
-          name="password"
-          placeholder="Şifre"
-          value={formData.password}
-          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-          required
-          className="p-2 border"
-        />
-        <button type="submit" className="button">
-          Giriş Yap
-        </button>
-        {error && <div className="text-red-500 text-center">{error}</div>}
-      </form>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+      <div className="bg-white p-8 rounded shadow-md w-80">
+        <h2 className="text-2xl font-bold mb-6 text-center">Admin Girişi</h2>
+        <form onSubmit={handleLogin} className="flex flex-col gap-4">
+          <input
+            type="text"
+            placeholder="Kullanıcı Adı"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="border p-2 rounded"
+            required
+          />
+          <input
+            type="password"
+            placeholder="Şifre"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="border p-2 rounded"
+            required
+          />
+          <button type="submit" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 rounded">
+            Giriş Yap
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
