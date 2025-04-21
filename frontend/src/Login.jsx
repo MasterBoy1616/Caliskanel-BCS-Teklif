@@ -1,51 +1,48 @@
-// frontend/src/Login.jsx
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Login = () => {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [formData, setFormData] = useState({ username: "", password: "" });
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleChange = (e) => {
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (username === "admin" && password === "1234") {
+    // Basit sabit kullanıcı kontrolü
+    if (formData.username === "admin" && formData.password === "1234") {
       navigate("/admin");
     } else {
-      setError("Kullanıcı adı veya şifre hatalı!");
+      alert("Hatalı kullanıcı adı veya şifre!");
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <div className="bg-white p-8 rounded shadow-md w-80">
-        <h1 className="text-2xl font-bold mb-6 text-center">🔒 Admin Girişi</h1>
-        <form onSubmit={handleLogin} className="flex flex-col gap-4">
+        <h2 className="text-2xl font-bold mb-6 text-center">Giriş Yap</h2>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <input
             type="text"
+            name="username"
             placeholder="Kullanıcı Adı"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="border p-2 rounded"
+            value={formData.username}
+            onChange={handleChange}
             required
+            className="border p-2 rounded"
           />
           <input
             type="password"
+            name="password"
             placeholder="Şifre"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="border p-2 rounded"
+            value={formData.password}
+            onChange={handleChange}
             required
+            className="border p-2 rounded"
           />
-          {error && (
-            <div className="text-red-500 text-sm text-center">{error}</div>
-          )}
-          <button
-            type="submit"
-            className="bg-blue-500 hover:bg-blue-700 text-white py-2 rounded"
-          >
+          <button type="submit" className="bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
             Giriş Yap
           </button>
         </form>
