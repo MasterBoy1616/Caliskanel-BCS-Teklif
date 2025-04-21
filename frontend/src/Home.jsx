@@ -1,113 +1,106 @@
-import React, { useState } from "react";
-import { generatePDF } from "./pdfGenerator";
-
-const brands = {
-  "Fiat": ["Egea", "Doblo", "Fiorino"],
-  "Renault": ["Clio", "Megane", "Symbol"],
-};
-
-const parts = [
-  { name: "Motor Yağı", price: 1200 },
-  { name: "Yağ Filtresi", price: 400 },
-  { name: "Hava Filtresi", price: 300 },
-  { name: "Polen Filtresi", price: 350 },
-  { name: "Yakıt Filtresi", price: 450 },
-];
-
-const extras = [
-  { name: "Balata", price: 1200 },
-  { name: "Disk", price: 1500 },
-  { name: "Silecek", price: 500 },
-];
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import "./app.css";
 
 function Home() {
+  const [brands, setBrands] = useState([]);
+  const [models, setModels] = useState([]);
   const [selectedBrand, setSelectedBrand] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
-  const [selectedExtras, setSelectedExtras] = useState([]);
-  const [customerName, setCustomerName] = useState("");
+  const [parts, setParts] = useState([]);
+  const [selectedParts, setSelectedParts] = useState([]);
+  const [name, setName] = useState("");
   const [plate, setPlate] = useState("");
 
-  const totalPrice = parts.reduce((acc, part) => acc + part.price, 0) + 
-    selectedExtras.reduce((acc, extra) => acc + extra.price, 0);
+  useEffect(() => {
+    axios.get("/api/brands").then((res) => setBrands(res.data));
+  }, []);
 
-  const handlePDF = () => {
-    if (!selectedBrand || !selectedModel || !customerName || !plate) {
-      alert("Lütfen tüm alanları doldurun!");
-      return;
+  useEffect(() => {
+    if (selectedBrand) {
+      axios.get(`/api/models/${selectedBrand}`).then((res) => setModels(res.data));
     }
-    generatePDF({
-      customerName,
-      plate,
-      brand: selectedBrand,
-      model: selectedModel,
-      parts,
-      extras: selectedExtras,
-      totalPrice
-    });
+  }, [selectedBrand]);
+
+  useEffect(() => {
+    if (selectedModel) {
+      axios.get(`/api/parts/${selectedModel}`).then((res) => setParts(res.data));
+    }
+  }, [selectedModel]);
+
+  const handleGeneratePDF = () => {
+    // Buraya daha sonra pdf oluşturma fonksiyonunu yazacağız
+    alert("PDF oluşturma yakında eklenecek!");
   };
 
+  const totalPrice = selectedParts.reduce((total, part) => total + (part.fiyat || 0), 0);
+
   return (
-    <div className="container">
-      <h1 className="title">Çalışkanel Bosch Car Servis</h1>
-      <p className="subtitle">Periyodik Bakım Teklif Formu</p>
+    <div className="app-background">
+      <div className="app-container">
+        <h1>Çalışkanel Bosch Car Servis</h1>
 
-      <div className="form">
-        <input
-          type="text"
-          placeholder="İsim Soyisim"
-          value={customerName}
-          onChange={(e) => setCustomerName(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Plaka"
-          value={plate}
-          onChange={(e) => setPlate(e.target.value)}
-        />
-
-        <select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)}>
-          <option value="">Marka Seçin</option>
-          {Object.keys(brands).map((brand) => (
-            <option key={brand} value={brand}>{brand}</option>
-          ))}
-        </select>
-
-        {selectedBrand && (
-          <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)}>
-            <option value="">Model Seçin</option>
-            {brands[selectedBrand].map((model) => (
-              <option key={model} value={model}>{model}</option>
+        <div className="selectors">
+          <select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)}>
+            <option value="">Marka Seç</option>
+            {brands.map((brand) => (
+              <option key={brand} value={brand}>
+                {brand}
+              </option>
             ))}
           </select>
-        )}
 
-        <div className="extras">
-          {extras.map((extra) => (
-            <label key={extra.name}>
+          <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)}>
+            <option value="">Model Seç</option>
+            {models.map((model) => (
+              <option key={model} value={model}>
+                {model}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="parts-section">
+          {parts.map((part, index) => (
+            <div key={index}>
               <input
                 type="checkbox"
-                checked={selectedExtras.includes(extra)}
                 onChange={(e) => {
                   if (e.target.checked) {
-                    setSelectedExtras([...selectedExtras, extra]);
+                    setSelectedParts([...selectedParts, part]);
                   } else {
-                    setSelectedExtras(selectedExtras.filter(x => x.name !== extra.name));
+                    setSelectedParts(selectedParts.filter((p) => p !== part));
                   }
                 }}
               />
-              {extra.name}
-            </label>
+              {part.kategori} - {part.urun_tip} - {part.birim} - {part.fiyat?.toLocaleString()} TL
+            </div>
           ))}
         </div>
-      </div>
 
-      <div className="total">
-        Toplam: {totalPrice.toLocaleString("tr-TR")} TL
-      </div>
+        <div className="user-inputs">
+          <input
+            type="text"
+            placeholder="İsim Soyisim"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <input
+            type="text"
+            placeholder="Plaka"
+            value={plate}
+            onChange={(e) => setPlate(e.target.value)}
+          />
+        </div>
 
-      <button className="generate-btn" onClick={handlePDF}>
-        Teklifi PDF Olarak Al
-      </button>
+        <div className="total-price">
+          <strong>Toplam: {totalPrice.toLocaleString()} TL</strong>
+        </div>
+
+        <button className="button" onClick={handleGeneratePDF}>
+          PDF Teklif Al
+        </button>
+      </div>
     </div>
   );
 }
