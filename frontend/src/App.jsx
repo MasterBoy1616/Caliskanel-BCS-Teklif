@@ -1,15 +1,12 @@
-import React from 'react';
-import Home from './Home';
-import './assets/style.css';
+import React from "react";
+import Home from "./Home";
 
-const App = () => {
+function App() {
   return (
-    <div className="app-background">
-      <div className="app-container">
-        <Home />
-      </div>
-    </div>
+    <>
+      <Home />
+    </>
   );
-};
+}
 
 export default App;
