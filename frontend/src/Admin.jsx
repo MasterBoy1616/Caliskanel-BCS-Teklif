@@ -1,25 +1,17 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { Bar } from "react-chartjs-2";
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from "chart.js";
-
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+import axios from "axios";
 
 const Admin = () => {
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [brands, setBrands] = useState([]);
   const [models, setModels] = useState([]);
   const [selectedBrand, setSelectedBrand] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
   const [parts, setParts] = useState([]);
-  const [fiyatArtis, setFiyatArtis] = useState(0);
-  const [message, setMessage] = useState("");
-
-  const [fiyatBakmaAdet, setFiyatBakmaAdet] = useState(0);
-  const [randevuAdet, setRandevuAdet] = useState(0);
 
   useEffect(() => {
     axios.get("/api/brands").then((res) => setBrands(res.data));
-    fetchCounts();
   }, []);
 
   useEffect(() => {
@@ -28,138 +20,135 @@ const Admin = () => {
     }
   }, [selectedBrand]);
 
-  useEffect(() => {
+  const fetchParts = () => {
     if (selectedBrand && selectedModel) {
       axios.get(`/api/parts?brand=${selectedBrand}&model=${selectedModel}`).then((res) => {
-        const data = res.data;
-        setParts([
-          ...(data.baseParts || []),
-          data.labor,
-          ...(data.optional.balata || []),
-          ...(data.optional.disk || []),
-          ...(data.optional.silecek || []),
-        ]);
+        setParts(res.data.baseParts || []);
       });
-    }
-  }, [selectedBrand, selectedModel]);
-
-  const fetchCounts = async () => {
-    const fiyatRes = await axios.get("/api/log/fiyatbakmasayisi");
-    const randevuRes = await axios.get("/api/log/randevusayisi");
-    setFiyatBakmaAdet(fiyatRes.data.adet || 0);
-    setRandevuAdet(randevuRes.data.adet || 0);
-  };
-
-  const handleFiyatArtis = (e) => {
-    setFiyatArtis(Number(e.target.value));
-  };
-
-  const handleKaydet = async () => {
-    try {
-      const updatedParts = parts.map((p) => ({
-        ...p,
-        fiyat: Math.round(p.fiyat * (1 + fiyatArtis / 100)),
-        toplam: Math.round(p.fiyat * p.birim * (1 + fiyatArtis / 100)),
-      }));
-      await axios.post("/api/save-prices", updatedParts);
-      setMessage("✔️ Başarıyla Kaydedildi!");
-      setTimeout(() => setMessage(""), 3000);
-    } catch (error) {
-      setMessage("❌ Kaydedilemedi!");
-      setTimeout(() => setMessage(""), 3000);
     }
   };
 
   const chartData = {
-    labels: ["Fiyat Sorgulama", "Randevu Alımı"],
+    labels: ["Fiyat Bakma", "Randevu Alma"],
     datasets: [
       {
-        label: "Toplam Adet",
-        backgroundColor: "#3b82f6",
-        data: [fiyatBakmaAdet, randevuAdet],
+        label: "Log Verileri",
+        data: [50, 20], // Örnek veri (istersen api'den çekilir)
+        backgroundColor: ["#4F46E5", "#22C55E"],
       },
     ],
   };
 
+  const handlePriceChange = (index, value) => {
+    const newParts = [...parts];
+    newParts[index].fiyat = Number(value);
+    newParts[index].toplam = Number(newParts[index].birim) * Number(value);
+    setParts(newParts);
+  };
+
+  const savePrices = () => {
+    axios
+      .post("/api/save-prices", { parts })
+      .then(() => alert("Fiyatlar güncellendi ✅"))
+      .catch(() => alert("Fiyatları kaydederken hata oluştu ❌"));
+  };
+
   return (
     <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6 text-center">Çalışkanel Admin Paneli</h1>
+      <h1 className="text-3xl font-bold text-center mb-6">Çalışkanel Admin Panel</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-white p-6 rounded shadow-md">
-          <h2 className="text-xl font-bold mb-4">İstatistikler</h2>
-          <Bar data={chartData} />
+      {/* Sekmeler */}
+      <div className="flex justify-center mb-8 gap-6">
+        <button onClick={() => setActiveTab("dashboard")} className={`p-2 ${activeTab === "dashboard" ? "bg-blue-600 text-white" : "bg-gray-200"}`}>Dashboard</button>
+        <button onClick={() => setActiveTab("price")} className={`p-2 ${activeTab === "price" ? "bg-blue-600 text-white" : "bg-gray-200"}`}>Fiyat Yönetimi</button>
+      </div>
+
+      {/* Dashboard */}
+      {activeTab === "dashboard" && (
+        <div className="flex justify-center">
+          <div className="w-full md:w-1/2">
+            <Bar data={chartData} />
+          </div>
         </div>
+      )}
 
-        <div className="bg-white p-6 rounded shadow-md">
-          <h2 className="text-xl font-bold mb-4">Fiyat Güncelle</h2>
-
-          <div className="flex flex-col gap-4 mb-4">
+      {/* Fiyat Yönetimi */}
+      {activeTab === "price" && (
+        <>
+          <div className="flex gap-4 mb-4">
             <select
               value={selectedBrand}
               onChange={(e) => {
                 setSelectedBrand(e.target.value);
                 setSelectedModel("");
+                setParts([]);
               }}
               className="border p-2 rounded"
             >
-              <option value="">Marka Seç</option>
+              <option value="">Marka Seçin</option>
               {brands.map((b) => (
-                <option key={b} value={b}>
-                  {b}
-                </option>
+                <option key={b} value={b}>{b}</option>
               ))}
             </select>
 
             <select
               value={selectedModel}
               onChange={(e) => setSelectedModel(e.target.value)}
-              className="border p-2 rounded"
               disabled={!selectedBrand}
+              className="border p-2 rounded"
             >
-              <option value="">Model Seç</option>
+              <option value="">Model Seçin</option>
               {models.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
+                <option key={m} value={m}>{m}</option>
               ))}
             </select>
 
-            <input
-              type="number"
-              value={fiyatArtis}
-              onChange={handleFiyatArtis}
-              placeholder="% Artış"
-              className="border p-2 rounded"
-            />
-
-            <button onClick={handleKaydet} className="bg-blue-500 hover:bg-blue-700 text-white py-2 rounded">
-              Kaydet
+            <button onClick={fetchParts} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+              Parçaları Getir
             </button>
-
-            {message && <p className="mt-2 text-center">{message}</p>}
           </div>
 
-          <table className="w-full text-sm mt-4">
-            <thead>
-              <tr>
-                <th className="border p-2">Kategori</th>
-                <th className="border p-2">Ürün</th>
-                <th className="border p-2">Fiyat (TL)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {parts.map((p, idx) => (
-                <tr key={idx}>
-                  <td className="border p-2">{p.kategori}</td>
-                  <td className="border p-2">{p.urun_tip}</td>
-                  <td className="border p-2">{p.fiyat} ₺</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+          {parts.length > 0 && (
+            <>
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="border p-2">Kategori</th>
+                    <th className="border p-2">Ürün</th>
+                    <th className="border p-2">Birim</th>
+                    <th className="border p-2">Fiyat (TL)</th>
+                    <th className="border p-2">Toplam (TL)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {parts.map((p, idx) => (
+                    <tr key={idx}>
+                      <td className="border p-2">{p.kategori}</td>
+                      <td className="border p-2">{p.urun_tip}</td>
+                      <td className="border p-2">{p.birim}</td>
+                      <td className="border p-2">
+                        <input
+                          type="number"
+                          value={p.fiyat}
+                          onChange={(e) => handlePriceChange(idx, e.target.value)}
+                          className="border p-1 rounded w-24"
+                        />
+                      </td>
+                      <td className="border p-2">{p.toplam} TL</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div className="flex justify-end mt-6">
+                <button onClick={savePrices} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded">
+                  Kaydet
+                </button>
+              </div>
+            </>
+          )}
+        </>
+      )}
     </div>
   );
 };
