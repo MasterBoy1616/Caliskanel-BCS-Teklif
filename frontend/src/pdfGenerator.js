@@ -1,39 +1,27 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import html2canvas from "html2canvas";
 
-export const generatePdf = (formData, parts, selectedExtras) => {
+export function generatePdf(formData, totalPrice, parts, selectedExtras) {
   const doc = new jsPDF();
 
-  doc.setFont("helvetica", "bold");
+  doc.setFont("Helvetica", "normal");
   doc.setFontSize(18);
-  doc.text("ÇALIŞKANEL BOSCH CAR SERVİS", 15, 15);
+  doc.text("Çalışkanel Bosch Car Servis", 15, 20);
 
-  doc.setFontSize(12);
-  doc.text(`Müşteri: ${formData.adSoyad || "-"}  |  Plaka: ${formData.plaka || "-"}`, 15, 25);
+  doc.setFontSize(14);
+  doc.text(`Müşteri: ${formData.adSoyad}`, 15, 35);
+  doc.text(`Plaka: ${formData.plaka}`, 15, 45);
 
   const tableData = [];
 
-  parts.baseParts.forEach((part) => {
-    tableData.push([
-      part.kategori,
-      part.urun_tip,
-      part.birim,
-      `${part.fiyat} TL`,
-      `${part.toplam} TL`
-    ]);
+  parts.baseParts.forEach((p) => {
+    tableData.push([p.kategori, p.urun_tip, p.birim, p.fiyat + " TL", p.toplam + " TL"]);
   });
 
   Object.keys(selectedExtras).forEach((key) => {
     if (selectedExtras[key]) {
-      parts.optional[key].forEach((opt) => {
-        tableData.push([
-          opt.kategori,
-          opt.urun_tip,
-          opt.birim,
-          `${opt.fiyat} TL`,
-          `${opt.toplam} TL`
-        ]);
+      parts.optional[key].forEach((p) => {
+        tableData.push([p.kategori, p.urun_tip, p.birim, p.fiyat + " TL", p.toplam + " TL"]);
       });
     }
   });
@@ -42,22 +30,19 @@ export const generatePdf = (formData, parts, selectedExtras) => {
     parts.labor.kategori,
     parts.labor.urun_tip,
     parts.labor.birim,
-    `${parts.labor.fiyat} TL`,
-    `${parts.labor.toplam} TL`
+    parts.labor.fiyat + " TL",
+    parts.labor.toplam + " TL"
   ]);
 
   autoTable(doc, {
-    head: [["Kategori", "Ürün", "Birim", "Fiyat (TL)", "Toplam (TL)"]],
+    startY: 55,
+    head: [["Kategori", "Ürün", "Birim", "Fiyat", "Toplam"]],
     body: tableData,
-    startY: 35,
+    styles: { font: "helvetica", fontSize: 10 },
   });
 
-  const total = tableData.reduce((sum, row) => {
-    const toplamValue = parseFloat(row[4].replace(" TL", "")) || 0;
-    return sum + toplamValue;
-  }, 0);
+  doc.setFontSize(16);
+  doc.text(`Toplam Tutar: ${totalPrice} TL (KDV Dahil)`, 15, doc.lastAutoTable.finalY + 20);
 
-  doc.text(`Toplam: ${total} TL (KDV Dahil)`, 15, doc.previousAutoTable.finalY + 10);
-
-  doc.save(`teklif_${formData.plaka || "bilgi"}.pdf`);
-};
+  doc.save(`teklif_${formData.plaka || "arac"}.pdf`);
+}
