@@ -12,7 +12,7 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     rollupOptions: {
-      external: ['fsevents']  // <<< Bu satır eklendi
+      external: ['fsevents']  // MacOS bağımlılığı devre dışı bırakıldı
     }
   },
   base: '/'
