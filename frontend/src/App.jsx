@@ -1,10 +1,9 @@
-import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./Home";
 import Login from "./Login";
 import Admin from "./Admin";
 
-const App = () => {
+function App() {
   return (
     <Router>
       <Routes>
@@ -14,6 +13,6 @@ const App = () => {
       </Routes>
     </Router>
   );
-};
+}
 
 export default App;
