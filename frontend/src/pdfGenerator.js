@@ -1,55 +1,51 @@
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import "jspdf-autotable";
 import html2canvas from "html2canvas";
 
-export const generatePdf = async (formData, totalPrice, parts) => {
+export const generatePdf = (formData, parts, selectedExtras, selectedBrand, selectedModel) => {
   const doc = new jsPDF();
-
-  // Bosch ve Çalışkanel logoları
-  const boschLogo = "/logo-bosch.png";
-  const caliskanelLogo = "/logo-caliskanel.png";
-
-  try {
-    const boschImage = await loadImage(boschLogo);
-    const caliskanelImage = await loadImage(caliskanelLogo);
-
-    doc.addImage(boschImage, "PNG", 15, 10, 40, 15);
-    doc.addImage(caliskanelImage, "PNG", 150, 10, 40, 15);
-  } catch (error) {
-    console.warn("Logo yüklenemedi:", error);
-  }
-
   doc.setFont("helvetica", "bold");
+
+  // Logo
+  const imgBosch = "/logo-bosch.png"; // /public klasöründe
+  const imgCaliskanel = "/logo-caliskanel.png";
+
+  doc.addImage(imgBosch, "PNG", 10, 8, 40, 20);
+  doc.addImage(imgCaliskanel, "PNG", 160, 8, 40, 20);
+
   doc.setFontSize(16);
-  doc.text("Çalışkanel Bosch Car Servis", 105, 35, { align: "center" });
+  doc.text("Çalışkanel Bosch Car Servisi", 105, 35, { align: "center" });
+
   doc.setFontSize(12);
-  doc.text(`Ad Soyad: ${formData.adSoyad}`, 15, 50);
-  doc.text(`Plaka: ${formData.plaka}`, 15, 60);
+  doc.text(`Müşteri: ${formData.adSoyad || "-"}  |  Plaka: ${formData.plaka || "-"}`, 14, 50);
+  doc.text(`Araç: ${selectedBrand} ${selectedModel}`, 14, 58);
 
-  const tableData = parts.map((p) => [
-    p.kategori,
-    p.urun_tip,
-    `${p.birim}`,
-    `${p.fiyat} TL`,
-    `${p.toplam} TL`,
-  ]);
+  const rows = [];
 
-  autoTable(doc, {
-    head: [["Kategori", "Ürün", "Birim", "Birim Fiyat", "Toplam"]],
-    body: tableData,
+  parts.baseParts.forEach((p) => {
+    rows.push([p.kategori, p.urun_tip, p.birim, `${p.fiyat} TL`, `${p.toplam} TL`]);
+  });
+
+  Object.entries(parts.optional).forEach(([key, items]) => {
+    if (selectedExtras[key]) {
+      items.forEach((p) => {
+        rows.push([p.kategori, p.urun_tip, p.birim, `${p.fiyat} TL`, `${p.toplam} TL`]);
+      });
+    }
+  });
+
+  rows.push(["İşçilik", parts.labor.urun_tip, parts.labor.birim, `${parts.labor.fiyat} TL`, `${parts.labor.toplam} TL`]);
+
+  doc.autoTable({
     startY: 70,
+    head: [["Kategori", "Ürün", "Birim", "Fiyat", "Toplam"]],
+    body: rows,
+    theme: "grid",
   });
 
+  const toplam = rows.reduce((sum, row) => sum + Number(row[4].replace(" TL", "")), 0);
   doc.setFontSize(14);
-  doc.text(`Toplam Tutar (KDV Dahil): ${totalPrice} TL`, 15, doc.lastAutoTable.finalY + 20);
+  doc.text(`Toplam: ${toplam} TL (KDV Dahil)`, 14, doc.lastAutoTable.finalY + 10);
 
-  doc.save(`teklif_${formData.plaka}.pdf`);
+  doc.save(`teklif_${formData.plaka || "arac"}.pdf`);
 };
-
-const loadImage = (src) =>
-  new Promise((resolve, reject) => {
-    const img = new Image();
-    img.src = src;
-    img.onload = () => resolve(img);
-    img.onerror = (err) => reject(err);
-  });
