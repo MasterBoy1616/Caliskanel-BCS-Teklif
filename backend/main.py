@@ -1,10 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Body, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import pandas as pd
 import os
 import json
-from fastapi import Request
 from datetime import datetime
 
 app = FastAPI()
@@ -13,10 +12,12 @@ app = FastAPI()
 excel_path = "backend/yeni_bosch_fiyatlari.xlsm"
 sheets = pd.read_excel(excel_path, sheet_name=None)
 
+# Log dosyaları
+FIYAT_LOG_PATH = "backend/logs/fiyat_bakma_logu.json"
+
 def parse_miktar(birim_str):
     try:
-        if pd.isna(birim_str):
-            return 1
+        if pd.isna(birim_str): return 1
         value = str(birim_str).split()[0].replace(",", ".")
         return float(value)
     except:
@@ -25,10 +26,8 @@ def parse_miktar(birim_str):
 def parse_row(row):
     fiyat = row.get("Tavsiye Edilen Satış Fiyatı", 0)
     birim = row.get("Birim", "1")
-    if pd.isna(fiyat):
-        fiyat = 0
-    if pd.isna(birim):
-        birim = "1"
+    if pd.isna(fiyat): fiyat = 0
+    if pd.isna(birim): birim = "1"
     miktar = parse_miktar(birim)
     toplam = round(fiyat * miktar)
     return {
@@ -61,16 +60,28 @@ def get_parts(brand: str, model: str):
         if not match.empty:
             base_parts.append(parse_row(match.iloc[0]))
 
+    def get_optional_parts(parca_kategori, iscilik_anahtar=None):
+        parts = []
+        match_part = df[df["KATEGORİ"] == parca_kategori]
+        if not match_part.empty:
+            parts.append(parse_row(match_part.iloc[0]))
+        if iscilik_anahtar:
+            match_iscilik = df[(df["KATEGORİ"] == "İşçilik") & (df["ÜRÜN/TİP"].str.contains(iscilik_anahtar, na=False))]
+            if not match_iscilik.empty:
+                parts.append(parse_row(match_iscilik.iloc[0]))
+        return parts
+
     optional = {
-        "balata": [],
-        "disk": [],
-        "silecek": [],
+        "balata": get_optional_parts("ÖnFrenBalata", "Balata"),
+        "disk": get_optional_parts("ÖnFrenDisk", "Disk"),
+        "silecek": get_optional_parts("Silecek")
     }
 
-    labor = {"kategori": "İşçilik", "urun_tip": "Periyodik Bakım", "birim": 1, "fiyat": 0, "toplam": 0}
     labor_match = df[(df["KATEGORİ"] == "İşçilik") & (df["ÜRÜN/TİP"].str.contains("Periyodik", na=False))]
     if not labor_match.empty:
         labor = parse_row(labor_match.iloc[0])
+    else:
+        labor = {"kategori": "İşçilik", "urun_tip": "Periyodik Bakım", "birim": 1, "fiyat": 0, "toplam": 0}
 
     return {
         "baseParts": base_parts,
@@ -78,7 +89,7 @@ def get_parts(brand: str, model: str):
         "labor": labor
     }
 
-# Frontend
+# Frontend yayınlama
 app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
 
 @app.get("/{full_path:path}")
