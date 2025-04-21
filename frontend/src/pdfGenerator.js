@@ -1,48 +1,52 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-export function generatePdf(formData, totalPrice, parts, selectedExtras) {
+export const generatePdf = (brand, model, parts, selectedExtras) => {
   const doc = new jsPDF();
 
-  doc.setFont("Helvetica", "normal");
-  doc.setFontSize(18);
-  doc.text("Çalışkanel Bosch Car Servis", 15, 20);
+  // Başlık
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("Çalışkanel Bosch Car Servis", 105, 15, { align: "center" });
 
-  doc.setFontSize(14);
-  doc.text(`Müşteri: ${formData.adSoyad}`, 15, 35);
-  doc.text(`Plaka: ${formData.plaka}`, 15, 45);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(12);
+  doc.text(`Araç: ${brand} - ${model}`, 105, 25, { align: "center" });
 
+  // Tablo verisi
   const tableData = [];
 
   parts.baseParts.forEach((p) => {
-    tableData.push([p.kategori, p.urun_tip, p.birim, p.fiyat + " TL", p.toplam + " TL"]);
+    tableData.push([p.kategori, p.urun_tip, p.birim, `${p.fiyat} TL`, `${p.toplam} TL`]);
   });
 
-  Object.keys(selectedExtras).forEach((key) => {
+  Object.keys(parts.optional).forEach((key) => {
     if (selectedExtras[key]) {
       parts.optional[key].forEach((p) => {
-        tableData.push([p.kategori, p.urun_tip, p.birim, p.fiyat + " TL", p.toplam + " TL"]);
+        tableData.push([p.kategori, p.urun_tip, p.birim, `${p.fiyat} TL`, `${p.toplam} TL`]);
       });
     }
   });
 
-  tableData.push([
-    parts.labor.kategori,
-    parts.labor.urun_tip,
-    parts.labor.birim,
-    parts.labor.fiyat + " TL",
-    parts.labor.toplam + " TL"
-  ]);
+  if (parts.labor) {
+    tableData.push([parts.labor.kategori, parts.labor.urun_tip, parts.labor.birim, `${parts.labor.fiyat} TL`, `${parts.labor.toplam} TL`]);
+  }
 
   autoTable(doc, {
-    startY: 55,
-    head: [["Kategori", "Ürün", "Birim", "Fiyat", "Toplam"]],
+    head: [["Kategori", "Ürün Tipi", "Birim", "Fiyat", "Toplam"]],
     body: tableData,
+    startY: 35,
     styles: { font: "helvetica", fontSize: 10 },
+    headStyles: { fillColor: [41, 128, 185] }
   });
 
-  doc.setFontSize(16);
-  doc.text(`Toplam Tutar: ${totalPrice} TL (KDV Dahil)`, 15, doc.lastAutoTable.finalY + 20);
+  const total = tableData.reduce((sum, row) => {
+    const toplam = parseFloat(row[4].replace(" TL", "")) || 0;
+    return sum + toplam;
+  }, 0);
 
-  doc.save(`teklif_${formData.plaka || "arac"}.pdf`);
-}
+  doc.setFontSize(14);
+  doc.text(`Toplam Tutar (KDV Dahil): ${total.toLocaleString("tr-TR")} TL`, 105, doc.lastAutoTable.finalY + 20, { align: "center" });
+
+  doc.save(`teklif_${brand}_${model}.pdf`);
+};
