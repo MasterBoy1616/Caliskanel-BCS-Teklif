@@ -7,7 +7,7 @@ import json
 
 app = FastAPI()
 
-# Excel dosyası
+# Excel dosya yolu
 excel_path = "backend/yeni_bosch_fiyatlari.xlsm"
 sheets = pd.read_excel(excel_path, sheet_name=None)
 
@@ -17,7 +17,8 @@ RANDEVU_LOG_PATH = "backend/logs/randevu_logu.json"
 
 def parse_miktar(birim_str):
     try:
-        if pd.isna(birim_str): return 1
+        if pd.isna(birim_str):
+            return 1
         value = str(birim_str).split()[0].replace(",", ".")
         return float(value)
     except:
@@ -26,8 +27,10 @@ def parse_miktar(birim_str):
 def parse_row(row):
     fiyat = row.get("Tavsiye Edilen Satış Fiyatı", 0)
     birim = row.get("Birim", "1")
-    if pd.isna(fiyat): fiyat = 0
-    if pd.isna(birim): birim = "1"
+    if pd.isna(fiyat):
+        fiyat = 0
+    if pd.isna(birim):
+        birim = "1"
     miktar = parse_miktar(birim)
     toplam = round(fiyat * miktar)
     return {
@@ -89,15 +92,8 @@ def get_parts(brand: str, model: str):
         "labor": labor
     }
 
-# Admin Giriş Sabit
-admin_credentials = {"username": "admin", "password": "123456"}
-
-@app.post("/api/login")
-async def login(request: Request):
-    data = await request.json()
-    if data.get("username") == admin_credentials["username"] and data.get("password") == admin_credentials["password"]:
-        return {"success": True}
-    return {"success": False}
+# Randevu alma kaldırıldı. (İstek üzerine)
+# Bu yüzden ilgili endpointler yok.
 
 # Frontend yayınlama
 app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
