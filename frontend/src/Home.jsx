@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { generatePdf } from "./pdfGenerator";
 import axios from "axios";
+import { generatePdf } from "./pdfGenerator";
 
 const Home = () => {
   const [brands, setBrands] = useState([]);
@@ -12,6 +12,10 @@ const Home = () => {
     balata: false,
     disk: false,
     silecek: false,
+  });
+  const [formData, setFormData] = useState({
+    adSoyad: "",
+    plaka: "",
   });
 
   useEffect(() => {
@@ -33,52 +37,44 @@ const Home = () => {
   const calculateTotal = () => {
     if (!parts) return 0;
     let total = 0;
-    parts.baseParts.forEach((p) => (total += p.toplam));
-    Object.keys(selectedExtras).forEach((key) => {
+    parts.baseParts.forEach(p => total += p.toplam);
+    Object.keys(selectedExtras).forEach(key => {
       if (selectedExtras[key]) {
-        parts.optional[key].forEach((p) => (total += p.toplam));
+        parts.optional[key].forEach(p => total += p.toplam);
       }
     });
     total += parts.labor.toplam;
     return total;
   };
 
-  const handlePdfGenerate = () => {
-    generatePdf(selectedBrand, selectedModel, parts, selectedExtras);
+  const handlePdfDownload = (e) => {
+    e.preventDefault();
+    if (!formData.adSoyad || !formData.plaka) {
+      alert("Ad Soyad ve Plaka boş olamaz.");
+      return;
+    }
+    generatePdf(formData, selectedBrand, selectedModel, parts, selectedExtras);
   };
 
   return (
     <div className="app-background">
       <div className="app-container">
-        <h1>Çalışkanel Bosch Car Servis</h1>
-        <div className="selectors">
-          <select
-            value={selectedBrand}
-            onChange={(e) => {
-              setSelectedBrand(e.target.value);
-              setSelectedModel("");
-              setParts(null);
-            }}
-          >
-            <option value="">Marka Seç</option>
-            {brands.map((brand) => (
-              <option key={brand} value={brand}>
-                {brand}
-              </option>
-            ))}
+        <h1 className="text-2xl font-bold mb-4 text-center">Periyodik Bakım Fiyat Sorgulama</h1>
+
+        <div className="selectors flex flex-wrap gap-4 mb-4">
+          <select value={selectedBrand} onChange={(e) => {
+            setSelectedBrand(e.target.value);
+            setSelectedModel("");
+            setParts(null);
+          }} className="border p-2 rounded">
+            <option value="">Marka Seçin</option>
+            {brands.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
 
-          <select
-            value={selectedModel}
-            onChange={(e) => setSelectedModel(e.target.value)}
-            disabled={!selectedBrand}
-          >
-            <option value="">Model Seç</option>
-            {models.map((model) => (
-              <option key={model} value={model}>
-                {model}
-              </option>
-            ))}
+          <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)}
+            disabled={!selectedBrand} className="border p-2 rounded">
+            <option value="">Model Seçin</option>
+            {models.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
         </div>
 
@@ -100,8 +96,8 @@ const Home = () => {
                     <td>{p.kategori}</td>
                     <td>{p.urun_tip}</td>
                     <td>{p.birim}</td>
-                    <td>{p.fiyat}</td>
-                    <td>{p.toplam}</td>
+                    <td>{p.fiyat} TL</td>
+                    <td>{p.toplam} TL</td>
                   </tr>
                 ))}
                 {Object.entries(parts.optional).map(([key, items]) =>
@@ -111,8 +107,8 @@ const Home = () => {
                           <td>{p.kategori}</td>
                           <td>{p.urun_tip}</td>
                           <td>{p.birim}</td>
-                          <td>{p.fiyat}</td>
-                          <td>{p.toplam}</td>
+                          <td>{p.fiyat} TL</td>
+                          <td>{p.toplam} TL</td>
                         </tr>
                       ))
                     : null
@@ -121,39 +117,55 @@ const Home = () => {
                   <td>{parts.labor.kategori}</td>
                   <td>{parts.labor.urun_tip}</td>
                   <td>{parts.labor.birim}</td>
-                  <td>{parts.labor.fiyat}</td>
-                  <td>{parts.labor.toplam}</td>
+                  <td>{parts.labor.fiyat} TL</td>
+                  <td>{parts.labor.toplam} TL</td>
                 </tr>
               </tbody>
             </table>
 
-            <div style={{ marginTop: "20px", fontSize: "20px", fontWeight: "bold" }}>
-              Toplam: {calculateTotal().toLocaleString()} TL (KDV Dahil)
+            <div className="text-2xl font-bold mt-6 text-center">
+              Toplam Tutar: {calculateTotal()} TL (KDV Dahil)
             </div>
-
-            <div className="extras" style={{ marginTop: "20px" }}>
-              {["balata", "disk", "silecek"].map((extra) => (
-                <label key={extra}>
-                  <input
-                    type="checkbox"
-                    checked={selectedExtras[extra]}
-                    onChange={() =>
-                      setSelectedExtras((prev) => ({
-                        ...prev,
-                        [extra]: !prev[extra],
-                      }))
-                    }
-                  />
-                  {extra.toUpperCase()}
-                </label>
-              ))}
-            </div>
-
-            <button className="button" style={{ marginTop: "20px" }} onClick={handlePdfGenerate}>
-              📄 Teklifi PDF Olarak Al
-            </button>
           </>
         )}
+
+        <div className="extras mt-6 flex flex-wrap gap-4">
+          {["balata", "disk", "silecek"].map(opt => (
+            <label key={opt}>
+              <input
+                type="checkbox"
+                checked={selectedExtras[opt]}
+                onChange={() => setSelectedExtras(prev => ({ ...prev, [opt]: !prev[opt] }))}
+              />
+              {" "}
+              {opt.toUpperCase()}
+            </label>
+          ))}
+        </div>
+
+        <form className="flex flex-col items-center mt-6 gap-4" onSubmit={handlePdfDownload}>
+          <input
+            type="text"
+            name="adSoyad"
+            placeholder="Ad Soyad"
+            value={formData.adSoyad}
+            onChange={(e) => setFormData({ ...formData, adSoyad: e.target.value })}
+            className="border p-2 rounded w-64"
+            required
+          />
+          <input
+            type="text"
+            name="plaka"
+            placeholder="Plaka"
+            value={formData.plaka}
+            onChange={(e) => setFormData({ ...formData, plaka: e.target.value })}
+            className="border p-2 rounded w-64"
+            required
+          />
+          <button type="submit" className="button bg-blue-500 hover:bg-blue-700">
+            📄 Teklifi PDF Olarak Al
+          </button>
+        </form>
       </div>
     </div>
   );
