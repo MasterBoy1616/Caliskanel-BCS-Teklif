@@ -1,29 +1,20 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-export const generatePDF = (data, isimSoyisim, plaka) => {
+const generatePdf = (data, userInfo) => {
   const doc = new jsPDF();
 
-  // Logolar
-  const logoBosch = "/logo-bosch.png";
-  const logoCaliskanel = "/logo-caliskanel.png";
-
-  // Başlık
+  doc.setFont("helvetica");
   doc.setFontSize(18);
-  doc.text("Çalışkanel Bosch Car Servis", 105, 20, { align: "center" });
+  doc.text("Çalışkanel Bosch Car Servisi", 105, 20, { align: "center" });
 
-  // Araç ve Kişi Bilgileri
   doc.setFontSize(12);
-  doc.text(`İsim Soyisim: ${isimSoyisim}`, 14, 40);
-  doc.text(`Plaka: ${plaka}`, 14, 48);
-  // Logo eklemek (eğer Base64 kullanacaksanız ekstra kod lazım, şimdilik basit bırakıyoruz)
-  // İstersen buraya ileride image ekleriz.
+  doc.text(`Müşteri: ${userInfo.name} ${userInfo.surname}`, 14, 30);
+  doc.text(`Plaka: ${userInfo.plate}`, 14, 40);
 
-  // Tablo Başlığı
   doc.setFontSize(14);
-  doc.text("Periyodik Bakım Fiyat Listesi", 105, 60, { align: "center" });
+  doc.text("Periyodik Bakım Fiyat Listesi", 105, 55, { align: "center" });
 
-  // Tablo oluşturma
   const tableData = data.map((item) => [
     item.KATEGORI,
     item.URUN,
@@ -33,16 +24,15 @@ export const generatePDF = (data, isimSoyisim, plaka) => {
   ]);
 
   autoTable(doc, {
-    startY: 70,
+    startY: 65,
     head: [["Kategori", "Ürün", "Birim", "Fiyat", "Toplam"]],
     body: tableData,
     styles: {
-      font: "helvetica", // Türkçe destekli standart font
-      fontStyle: "normal",
+      font: "helvetica",
       fontSize: 10,
     },
     headStyles: {
-      fillColor: [41, 128, 185], // Başlık rengi
+      fillColor: [41, 128, 185],
       textColor: 255,
     },
     bodyStyles: {
@@ -51,14 +41,12 @@ export const generatePDF = (data, isimSoyisim, plaka) => {
     margin: { top: 10 },
   });
 
-  // Toplam Tutar
   const total = data.reduce((sum, item) => sum + (parseFloat(item.TOPLAM) || 0), 0);
 
   doc.setFontSize(14);
   doc.text(`Genel Toplam: ${total.toFixed(2)} TL`, 14, doc.lastAutoTable.finalY + 20);
 
-  // PDF Kaydet
   doc.save("teklif.pdf");
 };
 
- 
+export { generatePdf };
