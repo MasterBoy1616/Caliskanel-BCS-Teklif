@@ -2,6 +2,7 @@
   background: linear-gradient(to bottom right, #f5f5f5, #d9e7ff);
   min-height: 100vh;
   padding: 20px;
+  font-family: Arial, sans-serif;
 }
 
 .app-container {
@@ -11,6 +12,7 @@
   padding: 24px;
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  text-align: center;
 }
 
 .selectors select {
@@ -21,32 +23,27 @@
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 10px;
+  margin-top: 20px;
 }
 
 table th, table td {
   border: 1px solid #ccc;
   padding: 6px 10px;
-  text-align: left;
-}
-
-.extras label {
-  margin-right: 15px;
-  font-weight: bold;
 }
 
 .button {
+  margin-top: 20px;
   background-color: #2563eb;
   color: white;
-  padding: 8px 16px;
+  padding: 10px 20px;
   border-radius: 8px;
+  font-weight: bold;
   cursor: pointer;
 }
 
-.button:hover {
-  background-color: #1d4ed8;
-}
-
-input, select, button {
-  font-family: inherit;
+.total {
+  margin-top: 20px;
+  font-size: 24px;
+  font-weight: bold;
+  color: green;
 }
