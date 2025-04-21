@@ -13,7 +13,8 @@ const Home = () => {
     disk: false,
     silecek: false,
   });
-  const [userInfo, setUserInfo] = useState({
+
+  const [formData, setFormData] = useState({
     adSoyad: "",
     plaka: ""
   });
@@ -31,33 +32,36 @@ const Home = () => {
   useEffect(() => {
     if (selectedBrand && selectedModel) {
       axios.get(`/api/parts?brand=${selectedBrand}&model=${selectedModel}`).then((res) => setParts(res.data));
-      axios.post("/api/log/fiyatbakma");
     }
   }, [selectedBrand, selectedModel]);
 
   const calculateTotal = () => {
     if (!parts) return 0;
     let total = 0;
-    parts.baseParts.forEach(p => total += p.toplam);
+    parts.baseParts.forEach((p) => total += p.toplam);
     Object.keys(selectedExtras).forEach(key => {
       if (selectedExtras[key]) {
-        parts.optional[key].forEach(p => total += p.toplam);
+        parts.optional[key].forEach((p) => total += p.toplam);
       }
     });
     total += parts.labor.toplam;
     return total;
   };
 
-  const handlePdf = () => {
-    generatePdf(userInfo, calculateTotal(), parts, selectedExtras);
+  const handleGeneratePDF = () => {
+    if (!selectedBrand || !selectedModel) {
+      alert("Lütfen araç marka ve model seçiniz!");
+      return;
+    }
+    generatePdf(formData, parts, selectedExtras, selectedBrand, selectedModel);
   };
 
   return (
-    <div className="app-background">
+    <div className="p-6 app-background">
       <div className="app-container">
-        <h2 className="text-2xl font-bold mb-4">Periyodik Bakım Fiyat Sorgulama</h2>
+        <h1 className="text-2xl font-bold mb-6 text-center">Periyodik Bakım Fiyat Sorgulama</h1>
 
-        <div className="selectors mb-4">
+        <div className="selectors flex flex-wrap gap-4 mb-6 justify-center">
           <select
             value={selectedBrand}
             onChange={(e) => {
@@ -65,6 +69,7 @@ const Home = () => {
               setSelectedModel("");
               setParts(null);
             }}
+            className="border p-2 rounded"
           >
             <option value="">Marka Seç</option>
             {brands.map((b) => (
@@ -78,6 +83,7 @@ const Home = () => {
             value={selectedModel}
             onChange={(e) => setSelectedModel(e.target.value)}
             disabled={!selectedBrand}
+            className="border p-2 rounded"
           >
             <option value="">Model Seç</option>
             {models.map((m) => (
@@ -88,60 +94,9 @@ const Home = () => {
           </select>
         </div>
 
-        {parts && (
-          <>
-            <table>
-              <thead>
-                <tr>
-                  <th>Kategori</th>
-                  <th>Ürün</th>
-                  <th>Birim</th>
-                  <th>Fiyat (TL)</th>
-                  <th>Toplam (TL)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {parts.baseParts.map((p, i) => (
-                  <tr key={i}>
-                    <td>{p.kategori}</td>
-                    <td>{p.urun_tip}</td>
-                    <td>{p.birim}</td>
-                    <td>{p.fiyat}</td>
-                    <td>{p.toplam}</td>
-                  </tr>
-                ))}
-                {Object.entries(parts.optional).map(([key, items]) =>
-                  selectedExtras[key]
-                    ? items.map((p, i) => (
-                        <tr key={`${key}-${i}`}>
-                          <td>{p.kategori}</td>
-                          <td>{p.urun_tip}</td>
-                          <td>{p.birim}</td>
-                          <td>{p.fiyat}</td>
-                          <td>{p.toplam}</td>
-                        </tr>
-                      ))
-                    : null
-                )}
-                <tr className="font-bold">
-                  <td>{parts.labor.kategori}</td>
-                  <td>{parts.labor.urun_tip}</td>
-                  <td>{parts.labor.birim}</td>
-                  <td>{parts.labor.fiyat}</td>
-                  <td>{parts.labor.toplam}</td>
-                </tr>
-              </tbody>
-            </table>
-
-            <div className="text-2xl font-bold mt-4">
-              Toplam Tutar: {calculateTotal()} TL (KDV Dahil)
-            </div>
-          </>
-        )}
-
-        <div className="extras mt-6">
+        <div className="flex flex-wrap gap-4 mb-6 justify-center">
           {["balata", "disk", "silecek"].map((opt) => (
-            <label key={opt}>
+            <label key={opt} className="flex items-center gap-2">
               <input
                 type="checkbox"
                 checked={selectedExtras[opt]}
@@ -154,25 +109,78 @@ const Home = () => {
           ))}
         </div>
 
-        <div className="mt-6 flex flex-col gap-2">
+        <div className="flex flex-wrap gap-4 mb-6 justify-center">
           <input
             type="text"
             placeholder="Ad Soyad"
-            value={userInfo.adSoyad}
-            onChange={(e) => setUserInfo({ ...userInfo, adSoyad: e.target.value })}
-            className="border p-2"
+            value={formData.adSoyad}
+            onChange={(e) => setFormData({ ...formData, adSoyad: e.target.value })}
+            className="border p-2 rounded w-64"
           />
           <input
             type="text"
-            placeholder="Plaka"
-            value={userInfo.plaka}
-            onChange={(e) => setUserInfo({ ...userInfo, plaka: e.target.value })}
-            className="border p-2"
+            placeholder="Araç Plaka"
+            value={formData.plaka}
+            onChange={(e) => setFormData({ ...formData, plaka: e.target.value })}
+            className="border p-2 rounded w-64"
           />
+        </div>
 
+        {parts && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border-collapse mb-6">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="border p-2">Kategori</th>
+                  <th className="border p-2">Ürün</th>
+                  <th className="border p-2">Birim</th>
+                  <th className="border p-2">Fiyat (TL)</th>
+                  <th className="border p-2">Toplam (TL)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {parts.baseParts.map((p, i) => (
+                  <tr key={i}>
+                    <td className="border p-2">{p.kategori}</td>
+                    <td className="border p-2">{p.urun_tip}</td>
+                    <td className="border p-2">{p.birim}</td>
+                    <td className="border p-2">{p.fiyat}</td>
+                    <td className="border p-2">{p.toplam}</td>
+                  </tr>
+                ))}
+                {Object.entries(parts.optional).map(([key, items]) =>
+                  selectedExtras[key]
+                    ? items.map((p, i) => (
+                        <tr key={`${key}-${i}`}>
+                          <td className="border p-2">{p.kategori}</td>
+                          <td className="border p-2">{p.urun_tip}</td>
+                          <td className="border p-2">{p.birim}</td>
+                          <td className="border p-2">{p.fiyat}</td>
+                          <td className="border p-2">{p.toplam}</td>
+                        </tr>
+                      ))
+                    : null
+                )}
+                <tr className="font-bold">
+                  <td className="border p-2">{parts.labor.kategori}</td>
+                  <td className="border p-2">{parts.labor.urun_tip}</td>
+                  <td className="border p-2">{parts.labor.birim}</td>
+                  <td className="border p-2">{parts.labor.fiyat}</td>
+                  <td className="border p-2">{parts.labor.toplam}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className="text-2xl font-bold text-center mb-6">
+          Toplam: {calculateTotal()} TL (KDV Dahil)
+        </div>
+
+        <div className="flex justify-center">
           <button
-            onClick={handlePdf}
-            className="button mt-4"
+            onClick={handleGeneratePDF}
+            className="button bg-blue-600 hover:bg-blue-800 text-white px-6 py-3 rounded"
           >
             📄 Teklifi PDF Olarak Al
           </button>
