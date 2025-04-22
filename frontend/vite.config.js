@@ -1,12 +1,9 @@
-import { defineConfig } from "vite";
+import { defineConfig } from 'vite';
 
 export default defineConfig({
-  root: "./frontend",
+  root: 'frontend',
   build: {
-    outDir: "../backend/dist",
+    outDir: '../backend/dist',
     emptyOutDir: true,
-  },
-  server: {
-    port: 5173,
-  },
+  }
 });
