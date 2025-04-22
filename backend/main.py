@@ -4,16 +4,16 @@ import pandas as pd
 
 app = FastAPI()
 
-# CORS middleware doğru şekilde ekliyoruz
+# CORS Middleware (frontend erişebilsin diye)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],    # İstersen buraya sadece frontend domain yazabilirsin, ama "*" şu an sorun çıkarmaz
+    allow_origins=["*"],  # istersen sadece frontend domain yazabilirsin
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Excel dosyası ve sheet ismi
+# Excel dosyası ve sayfa adı
 EXCEL_PATH = "backend/yeni_bosch_fiyatlari.xlsm"
 SHEET_NAME = "02_TavsiyeEdilenBakımListesi"
 
@@ -21,24 +21,36 @@ SHEET_NAME = "02_TavsiyeEdilenBakımListesi"
 def read_excel():
     return pd.read_excel(EXCEL_PATH, sheet_name=SHEET_NAME)
 
-# Marka listesi endpoint
+# API: Markaları getir
 @app.get("/api/markalar")
 def get_markalar():
     df = read_excel()
     markalar = df["MARKA"].dropna().unique().tolist()
     return markalar
 
-# Model listesi endpoint
+# API: Modelleri getir
 @app.get("/api/modeller")
 def get_modeller(marka: str):
     df = read_excel()
+    marka = marka.strip().upper()
+    df["MARKA"] = df["MARKA"].str.strip().str.upper()
     modeller = df[df["MARKA"] == marka]["MODEL"].dropna().unique().tolist()
     return modeller
 
-# Parçalar listesi endpoint
+# API: Parçaları getir
 @app.get("/api/parcalar")
 def get_parcalar(marka: str, model: str):
     df = read_excel()
+
+    # Gelen verileri temizle
+    marka = marka.strip().upper()
+    model = model.strip().upper()
+
+    # Excel verilerini normalize et
+    df["MARKA"] = df["MARKA"].str.strip().str.upper()
+    df["MODEL"] = df["MODEL"].str.strip().str.upper()
+
+    # Marka ve modele göre filtrele
     filtre = (df["MARKA"] == marka) & (df["MODEL"] == model)
     parts = df[filtre]
     results = []
