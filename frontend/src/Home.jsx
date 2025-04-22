@@ -1,72 +1,54 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { generatePdf } from "./pdfGenerator";
-import "./SpotliraTheme.css";
+import "./MainTheme.css";
 
 function Home() {
-  const [brands, setBrands] = useState([]);
-  const [models, setModels] = useState([]);
-  const [selectedBrand, setSelectedBrand] = useState("");
-  const [selectedModel, setSelectedModel] = useState("");
-  const [parts, setParts] = useState([]);
-  const [name, setName] = useState("");
-  const [plate, setPlate] = useState("");
+  const [markalar, setMarkalar] = useState([]);
+  const [modeller, setModeller] = useState([]);
+  const [secilenMarka, setSecilenMarka] = useState("");
+  const [secilenModel, setSecilenModel] = useState("");
+  const [parcalar, setParcalar] = useState([]);
+  const [isim, setIsim] = useState("");
+  const [plaka, setPlaka] = useState("");
 
   useEffect(() => {
-    axios.get("/api/brands").then((res) => {
-      setBrands(res.data);
-    });
+    axios.get("/api/markalar").then(res => setMarkalar(res.data));
   }, []);
 
   useEffect(() => {
-    if (selectedBrand) {
-      axios.get(`/api/models?brand=${selectedBrand}`).then((res) => {
-        setModels(res.data);
-      });
+    if (secilenMarka) {
+      axios.get(`/api/modeller?marka=${secilenMarka}`).then(res => setModeller(res.data));
     }
-  }, [selectedBrand]);
+  }, [secilenMarka]);
 
   useEffect(() => {
-    if (selectedBrand && selectedModel) {
-      axios.get(`/api/parts?brand=${selectedBrand}&model=${selectedModel}`).then((res) => {
-        const allParts = [...res.data.baseParts, res.data.labor];
-        setParts(allParts);
-      });
+    if (secilenMarka && secilenModel) {
+      axios.get(`/api/parcalar?marka=${secilenMarka}&model=${secilenModel}`)
+        .then(res => setParcalar(res.data));
     }
-  }, [selectedModel]);
+  }, [secilenMarka, secilenModel]);
 
-  const calculateTotal = () => {
-    return parts.reduce((sum, part) => sum + part.toplam, 0);
-  };
-
-  const handlePdfDownload = () => {
-    if (selectedBrand && selectedModel) {
-      generatePdf(selectedBrand, selectedModel, name, plate, parts, calculateTotal());
-    }
-  };
+  const toplamTutar = parcalar.reduce((acc, item) => acc + item.toplam_fiyat, 0);
 
   return (
-    <div className="app-background">
+    <div className="container">
       <div className="logo-container">
         <img src="/logo-bosch.png" alt="Bosch Logo" className="logo" />
         <img src="/logo-caliskanel.png" alt="Çalışkanel Logo" className="logo" />
       </div>
-      <div className="app-container">
-        <div className="selectors">
-          <select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)}>
+      <div className="card">
+        <div className="select-container">
+          <select onChange={e => setSecilenMarka(e.target.value)} value={secilenMarka}>
             <option value="">Marka Seçin</option>
-            {brands.map((brand) => (
-              <option key={brand} value={brand}>{brand}</option>
-            ))}
+            {markalar.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
-          <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)}>
+          <select onChange={e => setSecilenModel(e.target.value)} value={secilenModel}>
             <option value="">Model Seçin</option>
-            {models.map((model) => (
-              <option key={model} value={model}>{model}</option>
-            ))}
+            {modeller.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
         </div>
-        <table>
+        <table className="parcalar-tablosu">
           <thead>
             <tr>
               <th>Ürün / İşçilik</th>
@@ -76,24 +58,32 @@ function Home() {
             </tr>
           </thead>
           <tbody>
-            {parts.map((item, idx) => (
+            {parcalar.map((parca, idx) => (
               <tr key={idx}>
-                <td>{item.urun_tip}</td>
-                <td>{item.birim}</td>
-                <td>{item.fiyat}</td>
-                <td>{item.toplam}</td>
+                <td>{parca.urun}</td>
+                <td>{parca.adet}</td>
+                <td>{parca.birim_fiyat} TL</td>
+                <td>{parca.toplam_fiyat} TL</td>
               </tr>
             ))}
           </tbody>
         </table>
-        <div className="total-amount">
-          Toplam: {calculateTotal()} TL
-        </div>
-        <div className="info-fields">
-          <input type="text" placeholder="İsim Soyisim" value={name} onChange={(e) => setName(e.target.value)} />
-          <input type="text" placeholder="Plaka" value={plate} onChange={(e) => setPlate(e.target.value)} />
-        </div>
-        <button className="button" onClick={handlePdfDownload}>PDF Teklif Al</button>
+        <div className="toplam-tutar">Toplam: {toplamTutar.toLocaleString()} TL</div>
+        <input
+          type="text"
+          placeholder="İsim Soyisim"
+          value={isim}
+          onChange={(e) => setIsim(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Plaka"
+          value={plaka}
+          onChange={(e) => setPlaka(e.target.value)}
+        />
+        <button onClick={() => generatePdf(secilenMarka, secilenModel, parcalar, toplamTutar, isim, plaka)}>
+          PDF Teklif Al
+        </button>
       </div>
     </div>
   );
