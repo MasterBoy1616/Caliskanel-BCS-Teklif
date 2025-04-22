@@ -1,14 +1,28 @@
 <!DOCTYPE html>
 <html lang="tr">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Çalışkanel BCS Teklif</title>
-    <link rel="stylesheet" href="/style.css">
-  </head>
-  <body>
-    <div id="app"></div>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Çalışkanel BCS Teklif Sistemi</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div id="app">
+    <h1>Çalışkanel BCS Teklif Sistemi</h1>
+    <form id="teklif-form">
+      <input type="text" id="isim" placeholder="İsim" required><br>
+      <input type="text" id="plaka" placeholder="Plaka" required><br>
+      <select id="marka" required>
+        <option value="">Marka Seçin</option>
+      </select><br>
+      <select id="model" required>
+        <option value="">Model Seçin</option>
+      </select><br>
+      <button type="button" onclick="getParcalar()">Fiyatları Göster</button>
+    </form>
+    <div id="parcalar"></div>
+  </div>
 
-    <script type="module" src="/src/main.js"></script>
-  </body>
+  <script type="module" src="/src/main.js"></script>
+</body>
 </html>
