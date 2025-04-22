@@ -1,114 +1,64 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { generatePdf } from "./pdfGenerator";
-import "./SpotliraTheme.css";
+import "./MainTheme.css";
 
 function Home() {
-  const [markalar, setMarkalar] = useState([]);
-  const [modeller, setModeller] = useState([]);
-  const [selectedMarka, setSelectedMarka] = useState("");
-  const [selectedModel, setSelectedModel] = useState("");
-  const [parts, setParts] = useState([]);
   const [isim, setIsim] = useState("");
   const [plaka, setPlaka] = useState("");
+  const [markalar, setMarkalar] = useState([]);
+  const [modeller, setModeller] = useState([]);
+  const [secilenMarka, setSecilenMarka] = useState("");
+  const [secilenModel, setSecilenModel] = useState("");
+  const [parcalar, setParcalar] = useState([]);
+  const [extras, setExtras] = useState({ balata: false, disk: false, silecek: false });
 
   useEffect(() => {
-    axios.get('/api/markalar')
-      .then(res => setMarkalar(res.data))
-      .catch(err => console.error(err));
+    axios.get("/api/markalar").then(res => setMarkalar(res.data));
   }, []);
 
-  const handleMarkaChange = (e) => {
-    const marka = e.target.value;
-    setSelectedMarka(marka);
-    setSelectedModel("");
-    setParts([]);
-    axios.get(`/api/modeller?marka=${encodeURIComponent(marka)}`)
-      .then(res => setModeller(res.data))
-      .catch(err => console.error(err));
+  useEffect(() => {
+    if (secilenMarka) {
+      axios.get(`/api/modeller?marka=${encodeURIComponent(secilenMarka)}`).then(res => setModeller(res.data));
+    }
+  }, [secilenMarka]);
+
+  useEffect(() => {
+    if (secilenMarka && secilenModel) {
+      axios.get(`/api/parcalar?marka=${encodeURIComponent(secilenMarka)}&model=${encodeURIComponent(secilenModel)}`).then(res => setParcalar(res.data));
+    }
+  }, [secilenMarka, secilenModel]);
+
+  const handleExtraChange = (e) => {
+    setExtras({ ...extras, [e.target.name]: e.target.checked });
   };
 
-  const handleModelChange = (e) => {
-    const model = e.target.value;
-    setSelectedModel(model);
-    axios.get(`/api/parcalar?marka=${encodeURIComponent(selectedMarka)}&model=${encodeURIComponent(model)}`)
-      .then(res => setParts(res.data))
-      .catch(err => console.error(err));
-  };
-
-  const toplamFiyat = parts.reduce((acc, part) => acc + part.toplam, 0);
+  const toplam = [...parcalar].reduce((acc, item) => acc + item.toplam, 0);
 
   return (
     <div className="container">
-      <header className="header">
-        <img src="/logo-caliskanel.png" alt="Çalışkanel Logo" className="logo" />
-        <img src="/logo-bosch.png" alt="Bosch Logo" className="logo" />
-      </header>
+      <h1 className="title">Çalışkanel Bosch Car Servisi</h1>
 
-      <div className="form">
-        <input
-          type="text"
-          placeholder="İsim Soyisim"
-          value={isim}
-          onChange={(e) => setIsim(e.target.value)}
-          className="input"
-        />
-        <input
-          type="text"
-          placeholder="Plaka"
-          value={plaka}
-          onChange={(e) => setPlaka(e.target.value)}
-          className="input"
-        />
+      <input className="input" placeholder="İsim Soyisim" value={isim} onChange={e => setIsim(e.target.value)} />
+      <input className="input" placeholder="Plaka" value={plaka} onChange={e => setPlaka(e.target.value)} />
 
-        <select value={selectedMarka} onChange={handleMarkaChange} className="select">
-          <option value="">Marka Seçin</option>
-          {markalar.map((marka, idx) => (
-            <option key={idx} value={marka}>{marka}</option>
-          ))}
-        </select>
+      <select className="select" value={secilenMarka} onChange={e => setSecilenMarka(e.target.value)}>
+        <option value="">Marka Seç</option>
+        {markalar.map(m => <option key={m} value={m}>{m}</option>)}
+      </select>
 
-        <select value={selectedModel} onChange={handleModelChange} className="select" disabled={!selectedMarka}>
-          <option value="">Model Seçin</option>
-          {modeller.map((model, idx) => (
-            <option key={idx} value={model}>{model}</option>
-          ))}
-        </select>
+      <select className="select" value={secilenModel} onChange={e => setSecilenModel(e.target.value)}>
+        <option value="">Model Seç</option>
+        {modeller.map(m => <option key={m} value={m}>{m}</option>)}
+      </select>
+
+      <div className="extras">
+        <label><input type="checkbox" name="balata" checked={extras.balata} onChange={handleExtraChange} /> Balata</label>
+        <label><input type="checkbox" name="disk" checked={extras.disk} onChange={handleExtraChange} /> Disk</label>
+        <label><input type="checkbox" name="silecek" checked={extras.silecek} onChange={handleExtraChange} /> Silecek</label>
       </div>
 
-      {parts.length > 0 && (
-        <table className="price-table">
-          <thead>
-            <tr>
-              <th>Ürün</th>
-              <th>Adet</th>
-              <th>Birim Fiyat</th>
-              <th>Toplam</th>
-            </tr>
-          </thead>
-          <tbody>
-            {parts.map((part, idx) => (
-              <tr key={idx}>
-                <td>{part.urun}</td>
-                <td>{part.adet}</td>
-                <td>{part.birim_fiyat.toLocaleString()} TL</td>
-                <td>{part.toplam.toLocaleString()} TL</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-
-      {parts.length > 0 && (
-        <>
-          <div className="total">
-            Toplam: {toplamFiyat.toLocaleString()} TL
-          </div>
-          <button className="button" onClick={() => generatePdf(isim, plaka, selectedMarka, selectedModel, parts, toplamFiyat)}>
-            PDF Teklif Oluştur
-          </button>
-        </>
-      )}
+      <button className="button" onClick={() => generatePdf(isim, plaka, secilenMarka, secilenModel, parcalar, toplam, extras)}>PDF OLUŞTUR</button>
     </div>
   );
 }
