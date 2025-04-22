@@ -40,6 +40,18 @@ select {
   margin-top: 20px;
 }
 
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.checkbox-item input[type="checkbox"] {
+  margin-right: 10px;
+  width: 18px;
+  height: 18px;
+}
+
 button {
   width: 100%;
   padding: 10px;
