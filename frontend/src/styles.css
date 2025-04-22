@@ -1,7 +1,8 @@
 body {
   margin: 0;
-  font-family: 'Poppins', sans-serif;
-  background: linear-gradient(135deg, #3b2d7d, #7b5de3);
+  padding: 0;
+  font-family: 'Arial', sans-serif;
+  background: linear-gradient(135deg, #4a00e0, #8e2de2);
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -9,77 +10,83 @@ body {
 }
 
 .container {
-  background: white;
-  padding: 24px;
+  width: 100%;
+  max-width: 400px;
+  background: #ffffff;
+  padding: 25px;
   border-radius: 20px;
-  width: 360px;
-  max-width: 90%;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
 }
 
-.title {
-  font-size: 22px;
-  font-weight: bold;
-  color: #5f4d9a;
+h1 {
   text-align: center;
-}
-
-.subtitle {
-  font-size: 16px;
-  color: #7a6bb2;
-  text-align: center;
+  color: #4a00e0;
   margin-bottom: 20px;
 }
 
-.form input,
-.form select {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 12px;
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+input, select {
+  padding: 12px;
   border: 1px solid #ccc;
   border-radius: 12px;
+  font-size: 16px;
+}
+
+input:focus, select:focus {
+  border-color: #4a00e0;
+  outline: none;
+}
+
+.loading {
+  text-align: center;
+  color: #4a00e0;
+  margin-top: 20px;
+}
+
+.table {
+  margin-top: 20px;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  text-align: left;
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
   font-size: 14px;
 }
 
-.extras {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 10px;
-  margin-bottom: 20px;
-}
-
-.extras label {
-  background: #f0f0f5;
-  padding: 8px 12px;
-  border-radius: 12px;
-  font-size: 13px;
-  cursor: pointer;
-  flex: 1 1 45%;
-  text-align: center;
-}
-
-.total {
-  background: #5f4d9a;
+th {
+  background-color: #4a00e0;
   color: white;
-  padding: 14px;
-  border-radius: 16px;
-  font-size: 20px;
-  text-align: center;
-  margin-bottom: 20px;
 }
 
-.generate-btn {
+td {
+  color: #333;
+}
+
+.pdfButton {
   width: 100%;
+  margin-top: 20px;
   padding: 12px;
-  background: #7b5de3;
+  background-color: #8e2de2;
   color: white;
+  font-weight: bold;
   border: none;
-  border-radius: 14px;
-  font-size: 16px;
+  border-radius: 12px;
   cursor: pointer;
+  transition: background-color 0.3s;
 }
 
-.generate-btn:hover {
-  background: #5f4d9a;
+.pdfButton:hover {
+  background-color: #4a00e0;
 }
