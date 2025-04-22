@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import pandas as pd
+import os
 
 app = FastAPI()
 
@@ -14,12 +15,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Frontend dosyaları serve et
-app.mount("/", StaticFiles(directory="dist", html=True), name="static")
+# BURASI DÜZELTİLDİ
+app.mount("/", StaticFiles(directory="backend/dist", html=True), name="static")
 
 @app.get("/")
 async def read_index():
-    return FileResponse("dist/index.html")
+    return FileResponse("backend/dist/index.html")
 
 # Excel işlemleri
 EXCEL_PATH = "backend/yeni_bosch_fiyatlari.xlsm"
