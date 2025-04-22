@@ -1,9 +1,9 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  root: 'frontend',
+  root: './frontend',
   build: {
     outDir: '../backend/dist',
     emptyOutDir: true,
-  }
+  },
 });
