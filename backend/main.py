@@ -12,55 +12,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Dosya yolu
-EXCEL_PATH = "yeni_bosch_fiyatlari.xlsm"
-
-# Veriyi oku
-def read_excel():
-    df = pd.read_excel(EXCEL_PATH, sheet_name="02_TavsiyeEdilenBakımListesi")
-    return df
+# Fiyat dosyasını oku
+df = pd.read_excel("backend/yeni_bosch_fiyatlari.xlsm")
 
 @app.get("/api/markalar")
 def get_markalar():
-    df = read_excel()
-    markalar = df["MARKA"].dropna().unique().tolist()
-    return markalar
+    return df["MARKA"].dropna().unique().tolist()
 
 @app.get("/api/modeller")
 def get_modeller(marka: str):
-    df = read_excel()
-    modeller = df[df["MARKA"] == marka]["MODEL"].dropna().unique().tolist()
-    return modeller
+    modeller = df[df["MARKA"] == marka]["MODEL"].dropna().unique()
+    return modeller.tolist()
 
 @app.get("/api/parcalar")
 def get_parcalar(marka: str, model: str):
-    df = read_excel()
-    parts = df[(df["MARKA"] == marka) & (df["MODEL"] == model)]
-    periyodik = parts[
-        parts["ÜRÜN/TİP"].isin([
-            "MotorYağ", "YağFiltresi", "HavaFiltresi", "PolenFiltre", "YakıtFiltresi"
-        ])
-    ]
-    # İşçilikleri çek
-    iscilik = df[(df["KATEGORİ"] == "İşçilik") & (df["ÜRÜN/TİP"] == "PeriyodikBakım")]
-
-    results = []
-    for _, row in periyodik.iterrows():
-        results.append({
-            "kategori": row["KATEGORİ"],
+    filtered = df[(df["MARKA"] == marka) & (df["MODEL"] == model)]
+    parts = []
+    for _, row in filtered.iterrows():
+        parts.append({
             "urun": row["ÜRÜN/TİP"],
-            "adet": row["Birim"],
-            "birim_fiyat": row["Tavsiye Edilen Satış Fiyatı"],
-            "toplam": row["Birim"] * row["Tavsiye Edilen Satış Fiyatı"],
+            "adet": int(row["Birim"]),
+            "birim_fiyat": int(row["Tavsiye Edilen Satış Fiyatı"]),
+            "toplam": int(row["Birim"]) * int(row["Tavsiye Edilen Satış Fiyatı"])
         })
-
-    for _, row in iscilik.iterrows():
-        results.append({
-            "kategori": "İşçilik",
-            "urun": "Periyodik Bakım İşçilik",
-            "adet": 1,
-            "birim_fiyat": row["Tavsiye Edilen Satış Fiyatı"],
-            "toplam": row["Tavsiye Edilen Satış Fiyatı"],
-        })
-
-    return results
+    return parts
