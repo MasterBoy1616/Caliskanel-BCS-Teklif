@@ -7,7 +7,7 @@ import pandas as pd
 
 app = FastAPI()
 
-# CORS ayarı
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,21 +16,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Excel dosya yolu
+# Backend dosya yolları
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FRONTEND_BUILD_DIR = os.path.join(BASE_DIR, "../frontend/dist")
 EXCEL_PATH = os.path.join(BASE_DIR, "yeni_bosch_fiyatlari.xlsm")
 SHEET_NAME = "02_TavsiyeEdilenBakımListesi"
 
-# Frontend dosyaları (React build)
-FRONTEND_DIR = os.path.join(BASE_DIR, "../frontend/dist")
-
-app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_DIR, "assets")), name="assets")
+# Static dosyaları (assets klasörünü) FastAPI üzerinden sun
+app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_BUILD_DIR, "assets")), name="assets")
 
 @app.get("/")
-async def serve_react_index():
-    return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+async def serve_react_app():
+    return FileResponse(os.path.join(FRONTEND_BUILD_DIR, "index.html"))
 
-# API yolları
+# API uç noktaları
 def read_excel():
     return pd.read_excel(EXCEL_PATH, sheet_name=SHEET_NAME)
 
