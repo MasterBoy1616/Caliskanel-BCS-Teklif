@@ -15,15 +15,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# DÜZELTME: backend/dist dizininden dosyalar serveleniyor
-app.mount("/assets", StaticFiles(directory="backend/dist/assets"), name="assets")
+# dist klasöründen frontend dosyaları sun
+app.mount("/assets", StaticFiles(directory="dist/assets"), name="assets")
 
-# "/" isteği geldiğinde index.html gönder
 @app.get("/")
 def root():
-    return FileResponse("backend/dist/index.html")
+    return FileResponse("dist/index.html")
 
-# Excel işlemleri
+# Excel yolu ve sheet
 EXCEL_PATH = "backend/yeni_bosch_fiyatlari.xlsm"
 SHEET_NAME = "02_TavsiyeEdilenBakımListesi"
 
@@ -49,6 +48,8 @@ def get_parcalar(marka: str, model: str):
     filtre = (df["MARKA"] == marka) & (df["MODEL"] == model)
     secilen = df[filtre]
     parcalar = []
+
+    # Zorunlu bakım parçaları
     for kategori in ["MotorYağ", "YağFiltresi", "HavaFiltresi", "PolenFiltre", "YakıtFiltresi"]:
         parca = secilen[secilen["KATEGORİ"] == kategori]
         if not parca.empty:
@@ -60,7 +61,7 @@ def get_parcalar(marka: str, model: str):
                 "toplam_fiyat": round(float(row["Birim"]) * int(row["Tavsiye Edilen Satış Fiyatı"]))
             })
 
-    # İşçilik eklemesi
+    # İşçilik - Periyodik Bakım
     iscilik = secilen[(secilen["KATEGORİ"] == "İşçilik") & (secilen["ÜRÜN/TİP"] == "PeriyodikBakım")]
     if not iscilik.empty:
         row = iscilik.iloc[0]
