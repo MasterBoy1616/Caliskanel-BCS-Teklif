@@ -5,9 +5,6 @@ from fastapi.responses import FileResponse
 import pandas as pd
 import os
 
-EXCEL_PATH = "backend/yeni_bosch_fiyatlari.xlsm"
-SHEET_NAME = "02_TavsiyeEdilenBakımListesi"
-
 app = FastAPI()
 
 app.add_middleware(
@@ -18,8 +15,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 👇 Burayı değiştirdim!
 app.mount("/", StaticFiles(directory="dist", html=True), name="static")
+
+@app.get("/")
+async def root():
+    return FileResponse("dist/index.html")
+
+EXCEL_PATH = "backend/yeni_bosch_fiyatlari.xlsm"
+SHEET_NAME = "02_TavsiyeEdilenBakımListesi"
 
 def read_excel():
     df = pd.read_excel(EXCEL_PATH, sheet_name=SHEET_NAME)
