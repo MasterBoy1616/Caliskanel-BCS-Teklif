@@ -1,12 +1,14 @@
-import { defineConfig } from 'vite'
+# frontend/vite.config.js
+
+import { defineConfig } from 'vite';
 
 export default defineConfig({
-  root: 'frontend',
+  root: '.',
   build: {
     outDir: '../backend/dist',
     emptyOutDir: true,
     rollupOptions: {
-      input: 'frontend/index.html',
+      input: 'index.html',
     },
   },
 });
