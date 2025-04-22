@@ -1,34 +1,14 @@
 <!DOCTYPE html>
 <html lang="tr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Çalışkanel BCS Teklif</title>
-  <link rel="stylesheet" href="/assets/style.css">
-</head>
-<body>
-  <div class="container">
-    <h1>Çalışkanel BCS Teklif Sistemi</h1>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Çalışkanel BCS Teklif</title>
+    <link rel="stylesheet" href="./style.css">
+  </head>
+  <body>
+    <div id="app"></div>
 
-    <div class="input-group">
-      <label for="marka">Marka Seçin:</label>
-      <select id="marka">
-        <option value="">-- Seçiniz --</option>
-      </select>
-    </div>
-
-    <div class="input-group">
-      <label for="model">Model Seçin:</label>
-      <select id="model" disabled>
-        <option value="">-- Seçiniz --</option>
-      </select>
-    </div>
-
-    <div id="parcalar" class="parts-list"></div>
-
-    <button id="pdfButton" class="hidden">PDF Olarak Kaydet</button>
-  </div>
-
-  <script type="module" src="/assets/index.js"></script>
-</body>
+    <script type="module" src="/src/main.js"></script>
+  </body>
 </html>
