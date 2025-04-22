@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import pandas as pd
-import os
 
 app = FastAPI()
 
@@ -15,14 +14,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# dist klasöründen frontend dosyaları sun
-app.mount("/assets", StaticFiles(directory="dist/assets"), name="assets")
+# Frontend dosyaları serve et
+app.mount("/", StaticFiles(directory="dist", html=True), name="static")
 
 @app.get("/")
-def root():
+async def read_index():
     return FileResponse("dist/index.html")
 
-# Excel yolu ve sheet
+# Excel işlemleri
 EXCEL_PATH = "backend/yeni_bosch_fiyatlari.xlsm"
 SHEET_NAME = "02_TavsiyeEdilenBakımListesi"
 
@@ -48,8 +47,6 @@ def get_parcalar(marka: str, model: str):
     filtre = (df["MARKA"] == marka) & (df["MODEL"] == model)
     secilen = df[filtre]
     parcalar = []
-
-    # Zorunlu bakım parçaları
     for kategori in ["MotorYağ", "YağFiltresi", "HavaFiltresi", "PolenFiltre", "YakıtFiltresi"]:
         parca = secilen[secilen["KATEGORİ"] == kategori]
         if not parca.empty:
@@ -60,8 +57,6 @@ def get_parcalar(marka: str, model: str):
                 "birim_fiyat": int(row["Tavsiye Edilen Satış Fiyatı"]),
                 "toplam_fiyat": round(float(row["Birim"]) * int(row["Tavsiye Edilen Satış Fiyatı"]))
             })
-
-    # İşçilik - Periyodik Bakım
     iscilik = secilen[(secilen["KATEGORİ"] == "İşçilik") & (secilen["ÜRÜN/TİP"] == "PeriyodikBakım")]
     if not iscilik.empty:
         row = iscilik.iloc[0]
@@ -71,5 +66,4 @@ def get_parcalar(marka: str, model: str):
             "birim_fiyat": int(row["Tavsiye Edilen Satış Fiyatı"]),
             "toplam_fiyat": int(row["Tavsiye Edilen Satış Fiyatı"]),
         })
-
     return parcalar
