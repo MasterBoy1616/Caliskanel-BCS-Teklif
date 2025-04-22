@@ -4,7 +4,7 @@ import pandas as pd
 
 app = FastAPI()
 
-# CORS ayarı (frontend'in erişebilmesi için)
+# CORS ayarı
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -15,17 +15,15 @@ app.add_middleware(
 
 # Dosya yolu
 EXCEL_PATH = "yeni_bosch_fiyatlari.xlsm"
-SHEET_NAME = "02_TavsiyeEdilenBakımListesi"  # 🔥 doğru isim, "Bakım" (ı harfli)
+SHEET_NAME = "02_TavsiyeEdilenBakımListesi"  # 🔥 doğru "ı" harfi
 
-# Excel dosyasını oku
 def read_excel():
     return pd.read_excel(EXCEL_PATH, sheet_name=SHEET_NAME)
 
 @app.get("/api/markalar")
 def get_markalar():
     df = read_excel()
-    markalar = df["MARKA"].dropna().unique().tolist()
-    return markalar
+    return df["MARKA"].dropna().unique().tolist()
 
 @app.get("/api/modeller")
 def get_modeller(marka: str):
@@ -41,7 +39,6 @@ def get_parcalar(marka: str, model: str):
 
     parcalar = []
 
-    # Ana periyodik bakım parçalarını çekelim
     for kategori in ["MotorYağ", "YağFiltresi", "HavaFiltresi", "PolenFiltre", "YakıtFiltresi"]:
         parca = secilen[secilen["KATEGORİ"] == kategori]
         if not parca.empty:
@@ -53,7 +50,6 @@ def get_parcalar(marka: str, model: str):
                 "toplam": round(float(row["Birim"]) * int(row["Tavsiye Edilen Satış Fiyatı"]))
             })
 
-    # Periyodik bakım işçilik ekleyelim
     iscilik = secilen[(secilen["KATEGORİ"] == "İşçilik") & (secilen["ÜRÜN/TİP"] == "PeriyodikBakım")]
     if not iscilik.empty:
         row = iscilik.iloc[0]
