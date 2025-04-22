@@ -1,42 +1,29 @@
-import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 import pandas as pd
+from functools import lru_cache
 
 app = FastAPI()
 
-# CORS ayarı
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Path ayarları
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-FRONTEND_DIST_DIR = os.path.join(BASE_DIR, "../frontend/dist")
-EXCEL_PATH = os.path.join(BASE_DIR, "yeni_bosch_fiyatlari.xlsm")
+EXCEL_PATH = "yeni_bosch_fiyatlari.xlsm"
 SHEET_NAME = "02_TavsiyeEdilenBakımListesi"
 
-# React build dosyalarını FastAPI üzerinden sun
-app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_DIST_DIR, "assets")), name="assets")
-
-@app.get("/")
-async def serve_index():
-    return FileResponse(os.path.join(FRONTEND_DIST_DIR, "index.html"))
-
-# API yolları
+@lru_cache()
 def read_excel():
     return pd.read_excel(EXCEL_PATH, sheet_name=SHEET_NAME)
 
 @app.get("/api/markalar")
 def get_markalar():
     df = read_excel()
-    return df["MARKA"].dropna().unique().tolist()
+    markalar = df["MARKA"].dropna().unique().tolist()
+    return markalar
 
 @app.get("/api/modeller")
 def get_modeller(marka: str):
@@ -63,6 +50,7 @@ def get_parcalar(marka: str, model: str):
                 "toplam": round(float(row["Birim"]) * int(row["Tavsiye Edilen Satış Fiyatı"]))
             })
 
+    # Periyodik Bakım İşçilik
     iscilik = secilen[(secilen["KATEGORİ"] == "İşçilik") & (secilen["ÜRÜN/TİP"] == "PeriyodikBakım")]
     if not iscilik.empty:
         row = iscilik.iloc[0]
@@ -74,3 +62,12 @@ def get_parcalar(marka: str, model: str):
         })
 
     return parcalar
+
+@app.get("/api/ekstralar")
+def get_ekstralar():
+    ekstralar = [
+        {"ad": "Ön Fren Balatası", "parca": "ÖnFrenBalata", "iscilik": "Balata"},
+        {"ad": "Ön Fren Diski", "parca": "ÖnFrenDisk", "iscilik": "Disk"},
+        {"ad": "Silecek Lastiği", "parca": "Silecek", "iscilik": None}
+    ]
+    return ekstralar
