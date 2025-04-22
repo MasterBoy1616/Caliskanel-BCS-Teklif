@@ -13,7 +13,7 @@ function Home() {
   const [plaka, setPlaka] = useState("");
 
   useEffect(() => {
-    axios.get("/api/markalar")
+    axios.get('/api/markalar')
       .then(res => setMarkalar(res.data))
       .catch(err => console.error(err));
   }, []);
@@ -41,7 +41,7 @@ function Home() {
   return (
     <div className="container">
       <header className="header">
-        <img src="/logo-caliskanel.png" alt="Caliskanel Logo" className="logo" />
+        <img src="/logo-caliskanel.png" alt="Çalışkanel Logo" className="logo" />
         <img src="/logo-bosch.png" alt="Bosch Logo" className="logo" />
       </header>
 
