@@ -8,7 +8,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const parcalarDiv = document.getElementById("parcalar");
   const pdfButton = document.getElementById("pdfButton");
 
-  // Markaları çek
   const markalar = await fetch("/api/markalar").then(res => res.json());
   markalar.forEach(marka => {
     const option = document.createElement("option");
@@ -17,7 +16,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     markaSelect.appendChild(option);
   });
 
-  // Marka seçilince modelleri getir
   markaSelect.addEventListener("change", async () => {
     modelSelect.innerHTML = `<option value="">-- Seçiniz --</option>`;
     modelSelect.disabled = true;
@@ -37,7 +35,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // Model seçilince parçaları getir
   modelSelect.addEventListener("change", async () => {
     parcalarDiv.innerHTML = "";
     pdfButton.classList.add("hidden");
@@ -59,7 +56,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // PDF oluştur
   pdfButton.addEventListener("click", async () => {
     const element = document.getElementById("parcalar");
     const canvas = await html2canvas(element);
