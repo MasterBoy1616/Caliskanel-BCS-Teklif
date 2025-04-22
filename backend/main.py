@@ -7,53 +7,60 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Excel dosyasını bir kez yükle
-df = pd.read_excel("backend/yeni_bosch_fiyatlari.xlsm", sheet_name="02_TavsiyeEdilenBakımListesi")
+# Dosya yolu
+EXCEL_PATH = "yeni_bosch_fiyatlari.xlsm"
 
-# Marka ve Model Listesi Üret
-markalar = sorted(df["MARKA"].dropna().unique())
+# Veriyi oku
+def read_excel():
+    df = pd.read_excel(EXCEL_PATH, sheet_name="02_TavsiyeEdilenBakımListesi")
+    return df
 
 @app.get("/api/markalar")
 def get_markalar():
+    df = read_excel()
+    markalar = df["MARKA"].dropna().unique().tolist()
     return markalar
 
 @app.get("/api/modeller")
 def get_modeller(marka: str):
-    modeller = sorted(df[df["MARKA"] == marka]["MODEL"].dropna().unique())
+    df = read_excel()
+    modeller = df[df["MARKA"] == marka]["MODEL"].dropna().unique().tolist()
     return modeller
 
 @app.get("/api/parcalar")
 def get_parcalar(marka: str, model: str):
-    filtre = (df["MARKA"] == marka) & (df["MODEL"] == model)
-    secilen = df[filtre]
+    df = read_excel()
+    parts = df[(df["MARKA"] == marka) & (df["MODEL"] == model)]
+    periyodik = parts[
+        parts["ÜRÜN/TİP"].isin([
+            "MotorYağ", "YağFiltresi", "HavaFiltresi", "PolenFiltre", "YakıtFiltresi"
+        ])
+    ]
+    # İşçilikleri çek
+    iscilik = df[(df["KATEGORİ"] == "İşçilik") & (df["ÜRÜN/TİP"] == "PeriyodikBakım")]
 
-    parcalar = []
-
-    # Önce sabit olanlar (MotorYağ, YağFiltresi, HavaFiltresi, PolenFiltre, YakıtFiltresi)
-    for kategori in ["MotorYağ", "YağFiltresi", "HavaFiltresi", "PolenFiltre", "YakıtFiltresi"]:
-        parca = secilen[secilen["KATEGORİ"] == kategori]
-        if not parca.empty:
-            row = parca.iloc[0]
-            parcalar.append({
-                "urun": row["ÜRÜN/TİP"],
-                "adet": float(row["Birim"]),
-                "birim_fiyat": int(row["Tavsiye Edilen Satış Fiyatı"]),
-                "toplam_fiyat": round(float(row["Birim"]) * int(row["Tavsiye Edilen Satış Fiyatı"]))
-            })
-
-    # Sonra Periyodik Bakım İşçilik ekle
-    iscilik = secilen[(secilen["KATEGORİ"] == "İşçilik") & (secilen["ÜRÜN/TİP"] == "PeriyodikBakım")]
-    if not iscilik.empty:
-        row = iscilik.iloc[0]
-        parcalar.append({
-            "urun": "Periyodik Bakım İşçilik",
-            "adet": 1,
-            "birim_fiyat": int(row["Tavsiye Edilen Satış Fiyatı"]),
-            "toplam_fiyat": int(row["Tavsiye Edilen Satış Fiyatı"]),
+    results = []
+    for _, row in periyodik.iterrows():
+        results.append({
+            "kategori": row["KATEGORİ"],
+            "urun": row["ÜRÜN/TİP"],
+            "adet": row["Birim"],
+            "birim_fiyat": row["Tavsiye Edilen Satış Fiyatı"],
+            "toplam": row["Birim"] * row["Tavsiye Edilen Satış Fiyatı"],
         })
 
-    return parcalar
+    for _, row in iscilik.iterrows():
+        results.append({
+            "kategori": "İşçilik",
+            "urun": "Periyodik Bakım İşçilik",
+            "adet": 1,
+            "birim_fiyat": row["Tavsiye Edilen Satış Fiyatı"],
+            "toplam": row["Tavsiye Edilen Satış Fiyatı"],
+        })
+
+    return results
