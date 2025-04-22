@@ -1,72 +1,51 @@
-import "./style.css";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import './style.css';
 
-document.addEventListener("DOMContentLoaded", async () => {
-  const markaSelect = document.getElementById("marka");
-  const modelSelect = document.getElementById("model");
-  const parcalarDiv = document.getElementById("parcalar");
-  const pdfButton = document.getElementById("pdfButton");
-
-  const markalar = await fetch("/api/markalar").then(res => res.json());
+async function fetchMarkalar() {
+  const res = await fetch('/api/markalar');
+  const markalar = await res.json();
+  const markaSelect = document.getElementById('marka');
   markalar.forEach(marka => {
-    const option = document.createElement("option");
+    const option = document.createElement('option');
     option.value = marka;
     option.textContent = marka;
     markaSelect.appendChild(option);
   });
+}
 
-  markaSelect.addEventListener("change", async () => {
-    modelSelect.innerHTML = `<option value="">-- Seçiniz --</option>`;
-    modelSelect.disabled = true;
-    parcalarDiv.innerHTML = "";
-    pdfButton.classList.add("hidden");
-
-    const selectedMarka = markaSelect.value;
-    if (selectedMarka) {
-      const modeller = await fetch(`/api/modeller?marka=${selectedMarka}`).then(res => res.json());
-      modeller.forEach(model => {
-        const option = document.createElement("option");
-        option.value = model;
-        option.textContent = model;
-        modelSelect.appendChild(option);
-      });
-      modelSelect.disabled = false;
-    }
+async function fetchModeller(marka) {
+  const res = await fetch(`/api/modeller?marka=${marka}`);
+  const modeller = await res.json();
+  const modelSelect = document.getElementById('model');
+  modelSelect.innerHTML = '<option value="">Model Seçin</option>';
+  modeller.forEach(model => {
+    const option = document.createElement('option');
+    option.value = model;
+    option.textContent = model;
+    modelSelect.appendChild(option);
   });
+}
 
-  modelSelect.addEventListener("change", async () => {
-    parcalarDiv.innerHTML = "";
-    pdfButton.classList.add("hidden");
+async function getParcalar() {
+  const marka = document.getElementById('marka').value;
+  const model = document.getElementById('model').value;
+  if (!marka || !model) return;
 
-    const selectedMarka = markaSelect.value;
-    const selectedModel = modelSelect.value;
-    if (selectedModel) {
-      const parcalar = await fetch(`/api/parcalar?marka=${selectedMarka}&model=${selectedModel}`).then(res => res.json());
-      parcalar.forEach(parca => {
-        const div = document.createElement("div");
-        div.className = "checkbox-item";
-        div.innerHTML = `
-          <input type="checkbox" id="${parca.urun}" checked>
-          <label for="${parca.urun}">${parca.urun} - ${parca.adet} adet × ${parca.birim_fiyat}₺ = ${parca.toplam_fiyat}₺</label>
-        `;
-        parcalarDiv.appendChild(div);
-      });
-      pdfButton.classList.remove("hidden");
-    }
+  const res = await fetch(`/api/parcalar?marka=${marka}&model=${model}`);
+  const parcalar = await res.json();
+  const parcalarDiv = document.getElementById('parcalar');
+  parcalarDiv.innerHTML = '<h2>Fiyat Listesi</h2>';
+  parcalar.forEach(parca => {
+    const p = document.createElement('p');
+    p.textContent = `${parca.urun}: ${parca.adet} adet × ${parca.birim_fiyat} TL = ${parca.toplam_fiyat} TL`;
+    parcalarDiv.appendChild(p);
   });
+}
 
-  pdfButton.addEventListener("click", async () => {
-    const element = document.getElementById("parcalar");
-    const canvas = await html2canvas(element);
-    const imgData = canvas.toDataURL("image/png");
-
-    const pdf = new jsPDF();
-    const imgProps = pdf.getImageProperties(imgData);
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-    pdf.addImage(imgData, "PNG", 0, 10, pdfWidth, pdfHeight);
-    pdf.save("teklif.pdf");
-  });
+// Marka seçilince model getir
+const markaSelect = document.getElementById('marka');
+markaSelect.addEventListener('change', (e) => {
+  fetchModeller(e.target.value);
 });
+
+// İlk yüklemede markaları getir
+fetchMarkalar();
