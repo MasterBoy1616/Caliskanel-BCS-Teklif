@@ -1,6 +1,8 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import pandas as pd
 
 app = FastAPI()
@@ -14,11 +16,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Dosya yolu
+# Excel dosya yolu
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 EXCEL_PATH = os.path.join(BASE_DIR, "yeni_bosch_fiyatlari.xlsm")
 SHEET_NAME = "02_TavsiyeEdilenBakımListesi"
 
+# Frontend dosyaları (React build)
+FRONTEND_DIR = os.path.join(BASE_DIR, "../frontend/dist")
+
+app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_DIR, "assets")), name="assets")
+
+@app.get("/")
+async def serve_react_index():
+    return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+
+# API yolları
 def read_excel():
     return pd.read_excel(EXCEL_PATH, sheet_name=SHEET_NAME)
 
