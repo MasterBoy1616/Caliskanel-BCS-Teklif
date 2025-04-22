@@ -1,3 +1,5 @@
+// frontend/src/Home.jsx
+
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { generatePdf } from "./pdfGenerator";
@@ -6,109 +8,111 @@ import "./SpotliraTheme.css";
 function Home() {
   const [markalar, setMarkalar] = useState([]);
   const [modeller, setModeller] = useState([]);
-  const [selectedMarka, setSelectedMarka] = useState("");
-  const [selectedModel, setSelectedModel] = useState("");
-  const [parts, setParts] = useState([]);
+  const [secilenMarka, setSecilenMarka] = useState("");
+  const [secilenModel, setSecilenModel] = useState("");
+  const [parcalar, setParcalar] = useState([]);
   const [isim, setIsim] = useState("");
   const [plaka, setPlaka] = useState("");
 
   useEffect(() => {
     axios.get("/api/markalar")
-      .then(res => setMarkalar(res.data))
-      .catch(err => console.error(err));
+      .then((response) => {
+        setMarkalar(response.data);
+      });
   }, []);
 
-  const handleMarkaChange = (e) => {
-    const marka = e.target.value;
-    setSelectedMarka(marka);
-    setSelectedModel("");
-    setParts([]);
-    axios.get(`/api/modeller?marka=${encodeURIComponent(marka)}`)
-      .then(res => setModeller(res.data))
-      .catch(err => console.error(err));
-  };
+  useEffect(() => {
+    if (secilenMarka) {
+      axios.get(`/api/modeller?marka=${secilenMarka}`)
+        .then((response) => {
+          setModeller(response.data);
+        });
+    }
+  }, [secilenMarka]);
 
-  const handleModelChange = (e) => {
-    const model = e.target.value;
-    setSelectedModel(model);
-    axios.get(`/api/parcalar?marka=${encodeURIComponent(selectedMarka)}&model=${encodeURIComponent(model)}`)
-      .then(res => setParts(res.data))
-      .catch(err => console.error(err));
-  };
+  useEffect(() => {
+    if (secilenMarka && secilenModel) {
+      axios.get(`/api/parcalar?marka=${secilenMarka}&model=${secilenModel}`)
+        .then((response) => {
+          setParcalar(response.data);
+        });
+    }
+  }, [secilenMarka, secilenModel]);
 
-  const toplamFiyat = parts.reduce((acc, part) => acc + part.toplam, 0);
+  const toplamFiyat = parcalar.reduce((acc, parca) => acc + parca.toplam, 0);
 
   return (
     <div className="container">
-      <header className="header">
-        <img src="/logo-caliskanel.png" alt="Caliskanel Logo" className="logo" />
+      <div className="header">
         <img src="/logo-bosch.png" alt="Bosch Logo" className="logo" />
-      </header>
+        <img src="/logo-caliskanel.png" alt="Çalışkanel Logo" className="logo" />
+      </div>
 
-      <div className="form">
-        <input
-          type="text"
-          placeholder="İsim Soyisim"
-          value={isim}
-          onChange={(e) => setIsim(e.target.value)}
-          className="input"
+      <div className="form-group">
+        <input 
+          type="text" 
+          placeholder="İsim Soyisim" 
+          value={isim} 
+          onChange={(e) => setIsim(e.target.value)} 
         />
-        <input
-          type="text"
-          placeholder="Plaka"
-          value={plaka}
-          onChange={(e) => setPlaka(e.target.value)}
-          className="input"
+        <input 
+          type="text" 
+          placeholder="Plaka" 
+          value={plaka} 
+          onChange={(e) => setPlaka(e.target.value)} 
         />
+      </div>
 
-        <select value={selectedMarka} onChange={handleMarkaChange} className="select">
+      <div className="form-group">
+        <select value={secilenMarka} onChange={(e) => setSecilenMarka(e.target.value)}>
           <option value="">Marka Seçin</option>
-          {markalar.map((marka, idx) => (
-            <option key={idx} value={marka}>{marka}</option>
+          {markalar.map((marka, index) => (
+            <option key={index} value={marka}>{marka}</option>
           ))}
         </select>
 
-        <select value={selectedModel} onChange={handleModelChange} className="select" disabled={!selectedMarka}>
+        <select value={secilenModel} onChange={(e) => setSecilenModel(e.target.value)}>
           <option value="">Model Seçin</option>
-          {modeller.map((model, idx) => (
-            <option key={idx} value={model}>{model}</option>
+          {modeller.map((model, index) => (
+            <option key={index} value={model}>{model}</option>
           ))}
         </select>
       </div>
 
-      {parts.length > 0 && (
-        <table className="price-table">
+      <div className="table-wrapper">
+        <table className="table">
           <thead>
             <tr>
+              <th>Kategori</th>
               <th>Ürün</th>
               <th>Adet</th>
-              <th>Birim Fiyat</th>
-              <th>Toplam</th>
+              <th>Birim Fiyat (TL)</th>
+              <th>Toplam (TL)</th>
             </tr>
           </thead>
           <tbody>
-            {parts.map((part, idx) => (
-              <tr key={idx}>
-                <td>{part.urun}</td>
-                <td>{part.adet}</td>
-                <td>{part.birim_fiyat.toLocaleString()} TL</td>
-                <td>{part.toplam.toLocaleString()} TL</td>
+            {parcalar.map((parca, index) => (
+              <tr key={index}>
+                <td>{parca.kategori}</td>
+                <td>{parca.urun}</td>
+                <td>{parca.adet}</td>
+                <td>{parca.birim_fiyat} TL</td>
+                <td>{parca.toplam} TL</td>
               </tr>
             ))}
           </tbody>
         </table>
-      )}
+      </div>
 
-      {parts.length > 0 && (
-        <>
-          <div className="total">
-            Toplam: {toplamFiyat.toLocaleString()} TL
-          </div>
-          <button className="button" onClick={() => generatePdf(isim, plaka, selectedMarka, selectedModel, parts, toplamFiyat)}>
-            PDF Teklif Oluştur
-          </button>
-        </>
-      )}
+      <div className="summary">
+        Toplam: {toplamFiyat} TL
+      </div>
+
+      <div className="form-group">
+        <button onClick={() => generatePdf(isim, plaka, secilenMarka, secilenModel, parcalar, toplamFiyat)}>
+          PDF Teklif Al
+        </button>
+      </div>
     </div>
   );
 }
