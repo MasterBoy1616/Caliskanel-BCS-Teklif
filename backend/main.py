@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
@@ -14,8 +15,9 @@ app.add_middleware(
 )
 
 # Dosya yolu
-EXCEL_PATH = "yeni_bosch_fiyatlari.xlsm"
-SHEET_NAME = "02_TavsiyeEdilenBakımListesi"  # 🔥 doğru "ı" harfi
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+EXCEL_PATH = os.path.join(BASE_DIR, "yeni_bosch_fiyatlari.xlsm")
+SHEET_NAME = "02_TavsiyeEdilenBakımListesi"
 
 def read_excel():
     return pd.read_excel(EXCEL_PATH, sheet_name=SHEET_NAME)
