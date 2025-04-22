@@ -15,14 +15,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# BURASI DÜZELTİLDİ
-app.mount("/", StaticFiles(directory="backend/dist", html=True), name="static")
+# dist klasöründen static dosyaları veriyoruz
+app.mount("/", StaticFiles(directory="dist", html=True), name="static")
 
-@app.get("/")
-async def read_index():
-    return FileResponse("backend/dist/index.html")
-
-# Excel işlemleri
 EXCEL_PATH = "backend/yeni_bosch_fiyatlari.xlsm"
 SHEET_NAME = "02_TavsiyeEdilenBakımListesi"
 
@@ -48,6 +43,7 @@ def get_parcalar(marka: str, model: str):
     filtre = (df["MARKA"] == marka) & (df["MODEL"] == model)
     secilen = df[filtre]
     parcalar = []
+
     for kategori in ["MotorYağ", "YağFiltresi", "HavaFiltresi", "PolenFiltre", "YakıtFiltresi"]:
         parca = secilen[secilen["KATEGORİ"] == kategori]
         if not parca.empty:
@@ -58,6 +54,7 @@ def get_parcalar(marka: str, model: str):
                 "birim_fiyat": int(row["Tavsiye Edilen Satış Fiyatı"]),
                 "toplam_fiyat": round(float(row["Birim"]) * int(row["Tavsiye Edilen Satış Fiyatı"]))
             })
+
     iscilik = secilen[(secilen["KATEGORİ"] == "İşçilik") & (secilen["ÜRÜN/TİP"] == "PeriyodikBakım")]
     if not iscilik.empty:
         row = iscilik.iloc[0]
@@ -67,4 +64,5 @@ def get_parcalar(marka: str, model: str):
             "birim_fiyat": int(row["Tavsiye Edilen Satış Fiyatı"]),
             "toplam_fiyat": int(row["Tavsiye Edilen Satış Fiyatı"]),
         })
+
     return parcalar
