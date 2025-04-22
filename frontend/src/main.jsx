@@ -1,10 +1,13 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import App from "./App";
-import "./index.css";
+import './style.css'
 
-ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+document.addEventListener('DOMContentLoaded', function () {
+  const app = document.getElementById('app');
+
+  app.innerHTML = `
+    <div class="container">
+      <h1>Çalışkanel BCS Teklif Sistemi</h1>
+      <p>Başarıyla deploy edildi!</p>
+      <p>Marka ve Model Seçim Ekranı Buraya Gelecek</p>
+    </div>
+  `;
+});
