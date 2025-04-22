@@ -1,120 +1,153 @@
-// frontend/src/Home.jsx
-
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { generatePdf } from "./pdfGenerator";
-import "./SpotliraTheme.css";
 
-function Home() {
-  const [markalar, setMarkalar] = useState([]);
-  const [modeller, setModeller] = useState([]);
-  const [secilenMarka, setSecilenMarka] = useState("");
-  const [secilenModel, setSecilenModel] = useState("");
-  const [parcalar, setParcalar] = useState([]);
-  const [isim, setIsim] = useState("");
-  const [plaka, setPlaka] = useState("");
+const Home = () => {
+  const [brands, setBrands] = useState([]);
+  const [models, setModels] = useState([]);
+  const [selectedBrand, setSelectedBrand] = useState("");
+  const [selectedModel, setSelectedModel] = useState("");
+  const [parts, setParts] = useState(null);
+  const [selectedExtras, setSelectedExtras] = useState({
+    balata: false,
+    disk: false,
+    silecek: false,
+  });
 
   useEffect(() => {
-    axios.get("/api/markalar")
-      .then((response) => {
-        setMarkalar(response.data);
-      });
+    axios.get("/api/brands").then((res) => setBrands(res.data));
   }, []);
 
   useEffect(() => {
-    if (secilenMarka) {
-      axios.get(`/api/modeller?marka=${secilenMarka}`)
-        .then((response) => {
-          setModeller(response.data);
-        });
+    if (selectedBrand) {
+      axios.get(`/api/models?brand=${selectedBrand}`).then((res) => setModels(res.data));
     }
-  }, [secilenMarka]);
+  }, [selectedBrand]);
 
   useEffect(() => {
-    if (secilenMarka && secilenModel) {
-      axios.get(`/api/parcalar?marka=${secilenMarka}&model=${secilenModel}`)
-        .then((response) => {
-          setParcalar(response.data);
-        });
+    if (selectedBrand && selectedModel) {
+      axios.get(`/api/parts?brand=${selectedBrand}&model=${selectedModel}`).then((res) => setParts(res.data));
+      // Fiyat bakma logu kaydet
+      axios.post("/api/log/fiyatbakma");
     }
-  }, [secilenMarka, secilenModel]);
+  }, [selectedBrand, selectedModel]);
 
-  const toplamFiyat = parcalar.reduce((acc, parca) => acc + parca.toplam, 0);
+  const calculateTotal = () => {
+    if (!parts) return 0;
+    let total = 0;
+    parts.baseParts.forEach(p => total += p.toplam);
+    Object.keys(selectedExtras).forEach(key => {
+      if (selectedExtras[key]) {
+        parts.optional[key].forEach(p => total += p.toplam);
+      }
+    });
+    total += parts.labor.toplam;
+    return total;
+  };
 
   return (
-    <div className="container">
-      <div className="header">
-        <img src="/logo-bosch.png" alt="Bosch Logo" className="logo" />
-        <img src="/logo-caliskanel.png" alt="Çalışkanel Logo" className="logo" />
-      </div>
+    <div className="p-6">
+      <h2 className="text-2xl font-bold mb-4">Periyodik Bakım Fiyat Sorgulama</h2>
 
-      <div className="form-group">
-        <input 
-          type="text" 
-          placeholder="İsim Soyisim" 
-          value={isim} 
-          onChange={(e) => setIsim(e.target.value)} 
-        />
-        <input 
-          type="text" 
-          placeholder="Plaka" 
-          value={plaka} 
-          onChange={(e) => setPlaka(e.target.value)} 
-        />
-      </div>
-
-      <div className="form-group">
-        <select value={secilenMarka} onChange={(e) => setSecilenMarka(e.target.value)}>
-          <option value="">Marka Seçin</option>
-          {markalar.map((marka, index) => (
-            <option key={index} value={marka}>{marka}</option>
+      <div className="flex gap-4 mb-4">
+        <select
+          value={selectedBrand}
+          onChange={(e) => {
+            setSelectedBrand(e.target.value);
+            setSelectedModel("");
+            setParts(null);
+          }}
+          className="border p-2 rounded w-1/2"
+        >
+          <option value="">Marka Seç</option>
+          {brands.map((b) => (
+            <option key={b} value={b}>
+              {b}
+            </option>
           ))}
         </select>
 
-        <select value={secilenModel} onChange={(e) => setSecilenModel(e.target.value)}>
-          <option value="">Model Seçin</option>
-          {modeller.map((model, index) => (
-            <option key={index} value={model}>{model}</option>
+        <select
+          value={selectedModel}
+          onChange={(e) => setSelectedModel(e.target.value)}
+          disabled={!selectedBrand}
+          className="border p-2 rounded w-1/2"
+        >
+          <option value="">Model Seç</option>
+          {models.map((m) => (
+            <option key={m} value={m}>
+              {m}
+            </option>
           ))}
         </select>
       </div>
 
-      <div className="table-wrapper">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Kategori</th>
-              <th>Ürün</th>
-              <th>Adet</th>
-              <th>Birim Fiyat (TL)</th>
-              <th>Toplam (TL)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {parcalar.map((parca, index) => (
-              <tr key={index}>
-                <td>{parca.kategori}</td>
-                <td>{parca.urun}</td>
-                <td>{parca.adet}</td>
-                <td>{parca.birim_fiyat} TL</td>
-                <td>{parca.toplam} TL</td>
+      {parts && (
+        <>
+          <table className="w-full border-collapse mb-4">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border p-2">Kategori</th>
+                <th className="border p-2">Ürün</th>
+                <th className="border p-2">Birim</th>
+                <th className="border p-2">Fiyat (TL)</th>
+                <th className="border p-2">Toplam (TL)</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {parts.baseParts.map((p, i) => (
+                <tr key={i}>
+                  <td className="border p-2">{p.kategori}</td>
+                  <td className="border p-2">{p.urun_tip}</td>
+                  <td className="border p-2">{p.birim}</td>
+                  <td className="border p-2">{p.fiyat}</td>
+                  <td className="border p-2">{p.toplam}</td>
+                </tr>
+              ))}
+              {Object.entries(parts.optional).map(([key, items]) =>
+                selectedExtras[key]
+                  ? items.map((p, i) => (
+                      <tr key={`${key}-${i}`}>
+                        <td className="border p-2">{p.kategori}</td>
+                        <td className="border p-2">{p.urun_tip}</td>
+                        <td className="border p-2">{p.birim}</td>
+                        <td className="border p-2">{p.fiyat}</td>
+                        <td className="border p-2">{p.toplam}</td>
+                      </tr>
+                    ))
+                  : null
+              )}
+              <tr className="font-bold">
+                <td className="border p-2">{parts.labor.kategori}</td>
+                <td className="border p-2">{parts.labor.urun_tip}</td>
+                <td className="border p-2">{parts.labor.birim}</td>
+                <td className="border p-2">{parts.labor.fiyat}</td>
+                <td className="border p-2">{parts.labor.toplam}</td>
+              </tr>
+            </tbody>
+          </table>
 
-      <div className="summary">
-        Toplam: {toplamFiyat} TL
-      </div>
+          <div className="text-xl font-semibold">
+            Toplam: {calculateTotal()} TL (KDV Dahil)
+          </div>
+        </>
+      )}
 
-      <div className="form-group">
-        <button onClick={() => generatePdf(isim, plaka, secilenMarka, secilenModel, parcalar, toplamFiyat)}>
-          PDF Teklif Al
-        </button>
+      <div className="flex gap-4 mt-6">
+        {["balata", "disk", "silecek"].map((opt) => (
+          <label key={opt} className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={selectedExtras[opt]}
+              onChange={() =>
+                setSelectedExtras((prev) => ({ ...prev, [opt]: !prev[opt] }))
+              }
+            />
+            {opt.toUpperCase()}
+          </label>
+        ))}
       </div>
     </div>
   );
-}
+};
 
 export default Home;
