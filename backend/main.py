@@ -66,4 +66,3 @@ def get_parcalar(marka: str, model: str):
 
     return parcalar
 
----
