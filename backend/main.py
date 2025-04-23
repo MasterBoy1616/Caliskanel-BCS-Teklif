@@ -15,7 +15,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/", StaticFiles(directory="dist", html=True), name="static")
+app.mount("/", StaticFiles(directory="backend/dist", html=True), name="static")
+
 
 @app.get("/")
 def root():
