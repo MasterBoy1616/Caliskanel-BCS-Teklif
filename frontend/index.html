@@ -1,28 +1,21 @@
 <!DOCTYPE html>
 <html lang="tr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Çalışkanel BCS Teklif Sistemi</title>
-  <link rel="stylesheet" href="./style.css" />
-</head>
-<body>
-  <div class="container">
-    <h1>Çalışkanel BCS Teklif Sistemi</h1>
-    <div class="form-group">
-      <input type="text" id="isim" placeholder="İsim Soyisim" />
-      <input type="text" id="plaka" placeholder="Plaka" />
-      <select id="marka">
-        <option selected disabled>Marka Seçin</option>
-      </select>
-      <select id="model">
-        <option selected disabled>Model Seçin</option>
-      </select>
-      <button id="sorgula">Fiyatları Sorgula</button>
-    </div>
-    <div id="sonuc"></div>
-  </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Çalışkanel BCS Teklif</title>
+    <link rel="stylesheet" href="/assets/index.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Çalışkanel BCS Teklif Sistemi</h1>
+      <label for="marka">Marka:</label>
+      <select id="marka"></select>
 
-  <script type="module" src="./main.js"></script>
-</body>
+      <label for="model">Model:</label>
+      <select id="model"></select>
+    </div>
+
+    <script type="module" src="/assets/index.js"></script>
+  </body>
 </html>
