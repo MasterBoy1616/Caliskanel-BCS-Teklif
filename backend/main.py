@@ -1,9 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 import pandas as pd
 import os
+
+EXCEL_PATH = "backend/yeni_bosch_fiyatlari.xlsm"
+SHEET_NAME = "02_TavsiyeEdilenBakımListesi"
 
 app = FastAPI()
 
@@ -15,9 +17,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/", StaticFiles(directory="backend/dist", html=True), name="static")
+app.mount("/", StaticFiles(directory="dist", html=True), name="static")
 
+def read_excel():
+    if os.path.exists(EXCEL_PATH):
+        df = pd.read_excel(EXCEL_PATH, sheet_name=SHEET_NAME)
+        return df
+    else:
+        return pd.DataFrame()
 
-@app.get("/")
-def root():
-    return FileResponse("dist/index.html")
+@app.get("/api/markalar")
+def get_markalar():
+    df = read_excel()
+    markalar = df["MARKA"].dropna().unique().tolist()
+    return markalar
+
+@app.get("/api/modeller")
+def get_modeller(marka: str):
+    df = read_excel()
+    modeller = df[df["MARKA"] == marka]["MODEL"].dropna().unique().tolist()
+    return modeller
