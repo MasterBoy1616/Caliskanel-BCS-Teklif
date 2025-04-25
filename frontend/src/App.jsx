@@ -1,14 +1,14 @@
+// frontend/src/App.jsx
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import PriceCheck from "./components/PriceCheck.jsx";
+import PriceCheck from "./components/PriceCheck";
 
 const App = () => {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<PriceCheck />} />
-        {/* İleride diğer sayfalar için rotalar */}
-        {/* <Route path="/admin" element={<AdminPanel />} /> */}
+        <Route path="*" element={<PriceCheck />} />
       </Routes>
     </Router>
   );
