@@ -1,6 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import PriceCheck from "./PriceCheck";
+import PriceCheck from "./components/PriceCheck.jsx";
 
 const App = () => {
   return (
