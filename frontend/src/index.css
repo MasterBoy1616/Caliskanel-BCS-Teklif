@@ -1,76 +1,95 @@
-/* Genel stil */
+/* Temel ayarlar */
 body {
   margin: 0;
+  padding: 0;
   font-family: 'Poppins', sans-serif;
-  background: #f7f7f7;
+  background-color: #f2f2f2;
   color: #333;
 }
 
 /* Ana container */
 .container {
-  max-width: 600px;
-  margin: 50px auto;
-  padding: 20px;
-  background: white;
+  max-width: 500px;
+  margin: 20px auto;
+  background: #ffffff;
+  padding: 25px 20px;
   border-radius: 12px;
-  box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 /* Başlık */
 h1 {
-  text-align: center;
+  font-size: 24px;
+  font-weight: 700;
   color: #5B21B6;
-  font-size: 26px;
+  text-align: center;
   margin-bottom: 20px;
 }
 
-/* Seçim alanı */
+/* Seçim kutuları */
 .selection {
   display: flex;
   flex-direction: column;
   gap: 15px;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
 }
 
 .selection select {
-  padding: 12px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  padding: 12px 15px;
   font-size: 16px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background-color: #fafafa;
+  appearance: none;
 }
 
 /* Tablo */
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 20px;
+  margin-top: 10px;
 }
 
 table th, table td {
   padding: 10px;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid #e0e0e0;
   text-align: left;
+  font-size: 14px;
 }
 
 table th {
-  background: #ede9fe;
+  background-color: #ede9fe;
   color: #5B21B6;
-  font-weight: bold;
 }
 
+/* Toplam fiyat */
 h2 {
-  margin-top: 20px;
   text-align: right;
+  margin-top: 20px;
   color: #5B21B6;
+  font-size: 20px;
 }
 
-/* Mobil uyum */
+/* Mobil uyumluluk */
 @media (max-width: 600px) {
   .container {
-    margin: 20px;
-    padding: 15px;
+    margin: 10px;
+    padding: 20px 15px;
   }
+
+  h1 {
+    font-size: 22px;
+  }
+
   table th, table td {
+    font-size: 12px;
+  }
+
+  select {
     font-size: 14px;
+  }
+
+  h2 {
+    font-size: 18px;
   }
 }
