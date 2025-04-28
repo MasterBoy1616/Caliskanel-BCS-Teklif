@@ -29,3 +29,20 @@ th, td {
 .total {
   @apply text-lg font-bold text-green-600 text-center mt-4;
 }
+@media (max-width: 768px) {
+  .title {
+    font-size: 24px;
+  }
+
+  select {
+    font-size: 20px;
+  }
+
+  .parts-table th, .parts-table td {
+    font-size: 18px;
+  }
+
+  .total {
+    font-size: 22px;
+  }
+}
