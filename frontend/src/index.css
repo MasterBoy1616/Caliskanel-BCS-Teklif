@@ -29,7 +29,7 @@ th, td {
 .total {
   @apply text-lg font-bold text-green-600 text-center mt-4;
 }
-@media (max-width: 768px) {
+@media only screend and (max-width:959px) {
   .title {
     font-size: 24px;
   }
