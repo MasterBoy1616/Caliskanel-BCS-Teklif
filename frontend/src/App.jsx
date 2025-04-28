@@ -90,7 +90,7 @@ function App() {
             </div>
 
             <div className="text-xl font-bold text-center text-green-600 mt-6">
-              Toplam: {calculateTotal()} TL (KDV Dahil)
+              Toplam: {calculateTotal()} TL (+ KDV)
             </div>
           </div>
         )}
