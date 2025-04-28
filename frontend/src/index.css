@@ -1,31 +1,66 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 body {
-  @apply bg-gradient-to-br from-purple-700 to-blue-500 min-h-screen flex items-center justify-center;
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f5f5f5;
 }
 
 .container {
-  @apply bg-white p-8 rounded-lg shadow-md w-full max-w-md;
+  max-width: 800px;
+  margin: auto;
+  padding: 20px;
 }
 
-h1 {
-  @apply text-2xl font-bold mb-6 text-center;
+.title {
+  font-size: 24px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.subtitle {
+  font-size: 16px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.selectors {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
 }
 
 select {
-  @apply w-full p-2 mb-4 border rounded;
+  padding: 10px;
+  font-size: 16px;
 }
 
-table {
-  @apply w-full mb-4;
+.parts-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+  background-color: #fff;
 }
 
-th, td {
-  @apply p-2 text-left text-sm;
+.parts-table th, .parts-table td {
+  padding: 10px;
+  text-align: left;
+  border: 1px solid #ddd;
 }
 
 .total {
-  @apply text-lg font-bold text-green-600 text-center mt-4;
+  text-align: right;
+  font-size: 18px;
+  margin-top: 10px;
+  color: #333;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .selectors {
+    flex-direction: column;
+  }
+
+  .parts-table th, .parts-table td {
+    font-size: 14px;
+  }
 }
