@@ -29,9 +29,16 @@ const PriceCheck = () => {
     });
   };
 
+  const calculateTotal = () => {
+    if (!parts) return 0;
+    const baseTotal = parts.baseParts.reduce((sum, part) => sum + part.toplam, 0);
+    return baseTotal + (parts.labor?.toplam || 0);
+  };
+
   return (
     <div className="container">
       <h1>Çalışkanel BCS Periyodik Bakım Fiyat Sorgulama</h1>
+
       <select
         value={selectedBrand}
         onChange={(e) => {
@@ -76,17 +83,17 @@ const PriceCheck = () => {
               </tr>
             </thead>
             <tbody>
-              {parts.baseParts.map((item, index) => (
+              {parts.baseParts.map((part, index) => (
                 <tr key={index}>
-                  <td>{item.kategori}</td>
-                  <td>{item.urun_tip}</td>
-                  <td>{item.birim}</td>
-                  <td>{item.fiyat}</td>
-                  <td>{item.toplam}</td>
+                  <td>{part.kategori}</td>
+                  <td>{part.urun_tip}</td>
+                  <td>{part.birim}</td>
+                  <td>{part.fiyat}</td>
+                  <td>{part.toplam}</td>
                 </tr>
               ))}
-              <tr>
-                <td><strong>İşçilik</strong></td>
+              <tr className="labor">
+                <td>İşçilik</td>
                 <td>{parts.labor.urun_tip}</td>
                 <td>1</td>
                 <td>{parts.labor.fiyat}</td>
@@ -96,7 +103,7 @@ const PriceCheck = () => {
           </table>
 
           <div className="total">
-            Toplam: {parts.baseParts.reduce((acc, item) => acc + item.toplam, 0) + parts.labor.toplam} TL (KDV Dahil)
+            Toplam: {calculateTotal()} TL (KDV Dahil)
           </div>
         </>
       )}
