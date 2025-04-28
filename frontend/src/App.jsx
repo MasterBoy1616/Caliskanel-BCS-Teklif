@@ -1,6 +1,6 @@
 // src/App.jsx
 import React from "react";
-import PriceCheck from "./PriceCheck";
+import PriceCheck from "./components/PriceCheck";
 
 const App = () => {
   return (
