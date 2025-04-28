@@ -1,95 +1,53 @@
-/* Temel ayarlar */
+/* frontend/src/index.css */
 body {
   margin: 0;
   padding: 0;
-  font-family: 'Poppins', sans-serif;
-  background-color: #f2f2f2;
-  color: #333;
+  font-family: 'Arial', sans-serif;
+  background: #f7f7f7;
 }
 
-/* Ana container */
 .container {
-  max-width: 500px;
-  margin: 20px auto;
+  max-width: 480px;
+  margin: auto;
+  padding: 16px;
   background: #ffffff;
-  padding: 25px 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  min-height: 100vh;
 }
 
-/* Başlık */
 h1 {
-  font-size: 24px;
-  font-weight: 700;
-  color: #5B21B6;
   text-align: center;
-  margin-bottom: 20px;
+  font-size: 24px;
+  margin-bottom: 16px;
 }
 
-/* Seçim kutuları */
-.selection {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  margin-bottom: 25px;
-}
-
-.selection select {
-  padding: 12px 15px;
-  font-size: 16px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  background-color: #fafafa;
-  appearance: none;
-}
-
-/* Tablo */
-table {
+select, button {
   width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 16px;
 }
 
-table th, table td {
-  padding: 10px;
-  border-bottom: 1px solid #e0e0e0;
-  text-align: left;
-  font-size: 14px;
+button {
+  background-color: #4caf50;
+  color: white;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
 }
 
-table th {
-  background-color: #ede9fe;
-  color: #5B21B6;
+button:hover {
+  background-color: #45a049;
 }
 
-/* Toplam fiyat */
-h2 {
-  text-align: right;
-  margin-top: 20px;
-  color: #5B21B6;
-  font-size: 20px;
-}
-
-/* Mobil uyumluluk */
-@media (max-width: 600px) {
-  .container {
-    margin: 10px;
-    padding: 20px 15px;
-  }
-
-  h1 {
-    font-size: 22px;
-  }
-
-  table th, table td {
-    font-size: 12px;
-  }
-
-  select {
-    font-size: 14px;
-  }
-
-  h2 {
-    font-size: 18px;
-  }
+.price-summary {
+  margin-top: 24px;
+  padding: 16px;
+  background-color: #eeeeee;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
 }
