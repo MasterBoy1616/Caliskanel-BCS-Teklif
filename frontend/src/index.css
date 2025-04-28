@@ -1,72 +1,76 @@
-/* frontend/src/index.css */
-
+/* Genel stil */
 body {
   margin: 0;
-  font-family: 'Helvetica Neue', Arial, sans-serif;
-  background-color: #f5f5f5;
+  font-family: 'Poppins', sans-serif;
+  background: #f7f7f7;
   color: #333;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  margin: 0;
-  font-weight: 600;
-}
-
-a {
-  text-decoration: none;
-  color: inherit;
-}
-
+/* Ana container */
 .container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 16px;
+  max-width: 600px;
+  margin: 50px auto;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.05);
 }
 
-.button {
-  background-color: #4f46e5; /* Mor ton */
-  color: white;
-  padding: 12px 20px;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
+/* Başlık */
+h1 {
+  text-align: center;
+  color: #5B21B6;
+  font-size: 26px;
+  margin-bottom: 20px;
 }
 
-.button:hover {
-  background-color: #4338ca;
+/* Seçim alanı */
+.selection {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
 }
 
-input, select {
-  width: 100%;
-  padding: 10px;
-  margin-top: 8px;
-  margin-bottom: 16px;
+.selection select {
+  padding: 12px;
   border: 1px solid #ccc;
   border-radius: 8px;
   font-size: 16px;
 }
 
-label {
-  font-weight: bold;
-  margin-top: 12px;
-  display: block;
+/* Tablo */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
 }
 
-/* Responsive (mobil) düzenlemeler */
-@media (max-width: 768px) {
+table th, table td {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+}
+
+table th {
+  background: #ede9fe;
+  color: #5B21B6;
+  font-weight: bold;
+}
+
+h2 {
+  margin-top: 20px;
+  text-align: right;
+  color: #5B21B6;
+}
+
+/* Mobil uyum */
+@media (max-width: 600px) {
   .container {
-    padding: 8px;
+    margin: 20px;
+    padding: 15px;
   }
-
-  .button {
-    width: 100%;
-    padding: 14px;
-    font-size: 18px;
-  }
-
-  input, select {
-    font-size: 18px;
+  table th, table td {
+    font-size: 14px;
   }
 }
