@@ -1,79 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 body {
-  margin: 0;
-  font-family: 'Roboto', sans-serif;
-  background: linear-gradient(135deg, #6b73ff 0%, #000dff 100%);
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
+  @apply bg-gradient-to-br from-purple-700 to-blue-500 min-h-screen flex items-center justify-center;
 }
 
 .container {
-  width: 100%;
-  max-width: 600px;
-  background: #fff;
-  border-radius: 1rem;
-  padding: 2rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  text-align: center;
+  @apply bg-white p-8 rounded-lg shadow-md w-full max-w-md;
 }
 
 h1 {
-  font-size: 1.6rem;
-  font-weight: bold;
-  margin-bottom: 1.5rem;
-  color: #333;
+  @apply text-2xl font-bold mb-6 text-center;
 }
 
 select {
-  width: 100%;
-  padding: 0.8rem;
-  margin-bottom: 1rem;
-  border-radius: 0.5rem;
-  border: 1px solid #ccc;
-  font-size: 1rem;
+  @apply w-full p-2 mb-4 border rounded;
 }
 
 table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 1rem;
-  font-size: 0.95rem;
+  @apply w-full mb-4;
 }
 
 th, td {
-  padding: 0.8rem;
-  border: 1px solid #ddd;
-  text-align: center;
-}
-
-th {
-  background-color: #f0f0f0;
-  font-weight: bold;
-}
-
-.labor {
-  font-weight: bold;
+  @apply p-2 text-left text-sm;
 }
 
 .total {
-  margin-top: 1.5rem;
-  font-size: 1.3rem;
-  color: #10b981;
-  font-weight: bold;
-}
-
-@media (max-width: 480px) {
-  .container {
-    padding: 1rem;
-  }
-
-  h1 {
-    font-size: 1.4rem;
-  }
-
-  table, th, td {
-    font-size: 0.9rem;
-  }
+  @apply text-lg font-bold text-green-600 text-center mt-4;
 }
