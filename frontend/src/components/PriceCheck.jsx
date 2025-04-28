@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import "./index.css";
 
 const PriceCheck = () => {
   const [brands, setBrands] = useState([]);
@@ -10,43 +9,40 @@ const PriceCheck = () => {
   const [parts, setParts] = useState(null);
 
   useEffect(() => {
-    axios.get("/api/brands").then((response) => {
-      setBrands(response.data);
+    axios.get("/api/brands").then((res) => {
+      setBrands(res.data);
     });
   }, []);
 
-  const fetchModels = (brand) => {
-    axios.get(`/api/models?brand=${brand}`).then((response) => {
-      setModels(response.data);
-      setSelectedModel("");
-      setParts(null);
-    });
-  };
+  useEffect(() => {
+    if (selectedBrand) {
+      axios.get(`/api/models?brand=${selectedBrand}`).then((res) => {
+        setModels(res.data);
+      });
+    }
+  }, [selectedBrand]);
 
-  const fetchParts = (brand, model) => {
-    axios.get(`/api/parts?brand=${brand}&model=${model}`).then((response) => {
-      setParts(response.data);
-    });
-  };
+  useEffect(() => {
+    if (selectedBrand && selectedModel) {
+      axios.get(`/api/parts?brand=${selectedBrand}&model=${selectedModel}`).then((res) => {
+        setParts(res.data);
+      });
+    }
+  }, [selectedBrand, selectedModel]);
 
   const calculateTotal = () => {
     if (!parts) return 0;
-    const baseTotal = parts.baseParts.reduce((sum, part) => sum + part.toplam, 0);
-    return baseTotal + (parts.labor?.toplam || 0);
+    let total = parts.baseParts.reduce((sum, item) => sum + item.toplam, 0);
+    if (parts.labor) total += parts.labor.toplam;
+    return total;
   };
 
   return (
     <div className="container">
       <h1>Çalışkanel BCS Periyodik Bakım Fiyat Sorgulama</h1>
 
-      <select
-        value={selectedBrand}
-        onChange={(e) => {
-          setSelectedBrand(e.target.value);
-          fetchModels(e.target.value);
-        }}
-      >
-        <option value="">Marka Seçiniz</option>
+      <select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)}>
+        <option value="">Marka Seçin</option>
         {brands.map((brand) => (
           <option key={brand} value={brand}>
             {brand}
@@ -54,15 +50,8 @@ const PriceCheck = () => {
         ))}
       </select>
 
-      <select
-        value={selectedModel}
-        onChange={(e) => {
-          setSelectedModel(e.target.value);
-          fetchParts(selectedBrand, e.target.value);
-        }}
-        disabled={!selectedBrand}
-      >
-        <option value="">Model Seçiniz</option>
+      <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} disabled={!selectedBrand}>
+        <option value="">Model Seçin</option>
         {models.map((model) => (
           <option key={model} value={model}>
             {model}
@@ -71,41 +60,40 @@ const PriceCheck = () => {
       </select>
 
       {parts && (
-        <>
-          <table>
+        <div className="overflow-x-auto">
+          <table className="table-auto">
             <thead>
               <tr>
                 <th>Kategori</th>
                 <th>Ürün</th>
                 <th>Birim</th>
-                <th>Fiyat (TL)</th>
                 <th>Toplam (TL)</th>
               </tr>
             </thead>
             <tbody>
-              {parts.baseParts.map((part, index) => (
+              {parts.baseParts.map((item, index) => (
                 <tr key={index}>
-                  <td>{part.kategori}</td>
-                  <td>{part.urun_tip}</td>
-                  <td>{part.birim}</td>
-                  <td>{part.fiyat}</td>
-                  <td>{part.toplam}</td>
+                  <td>{item.kategori}</td>
+                  <td>{item.urun_tip}</td>
+                  <td>{item.birim}</td>
+                  <td>{item.toplam} TL</td>
                 </tr>
               ))}
-              <tr className="labor">
-                <td>İşçilik</td>
-                <td>{parts.labor.urun_tip}</td>
-                <td>1</td>
-                <td>{parts.labor.fiyat}</td>
-                <td>{parts.labor.toplam}</td>
-              </tr>
+              {parts.labor && (
+                <tr>
+                  <td>İşçilik</td>
+                  <td>{parts.labor.urun_tip}</td>
+                  <td>{parts.labor.birim}</td>
+                  <td>{parts.labor.toplam} TL</td>
+                </tr>
+              )}
             </tbody>
           </table>
 
           <div className="total">
             Toplam: {calculateTotal()} TL (KDV Dahil)
           </div>
-        </>
+        </div>
       )}
     </div>
   );
