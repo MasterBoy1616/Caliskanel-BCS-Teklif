@@ -26,7 +26,7 @@ const App = () => {
 
   return (
     <div className="container">
-      <h1>Periyodik Bakım Fiyat Sorgulama</h1>
+      <h1>Çalışkanel BCS Periyodik Bakım Fiyat Sorgulama</h1>
       <div className="selection">
         <select value={selectedBrand} onChange={e => setSelectedBrand(e.target.value)}>
           <option value="">Marka Seç</option>
