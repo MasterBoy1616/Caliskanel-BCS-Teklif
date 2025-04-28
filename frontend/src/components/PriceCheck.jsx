@@ -91,7 +91,7 @@ const PriceCheck = () => {
           </table>
 
           <div className="total">
-            Toplam: {calculateTotal()} TL (KDV Dahil)
+            Toplam: {calculateTotal()} TL ( + KDV )
           </div>
         </div>
       )}
