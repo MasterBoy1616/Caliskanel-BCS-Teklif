@@ -14,20 +14,21 @@ body {
   max-width: 600px;
   background: #fff;
   border-radius: 1rem;
-  padding: 1.5rem;
+  padding: 2rem;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   text-align: center;
 }
 
 h1 {
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: bold;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  color: #333;
 }
 
 select {
   width: 100%;
-  padding: 0.75rem;
+  padding: 0.8rem;
   margin-bottom: 1rem;
   border-radius: 0.5rem;
   border: 1px solid #ccc;
@@ -38,24 +39,29 @@ table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 1rem;
+  font-size: 0.95rem;
 }
 
 th, td {
-  padding: 0.75rem;
+  padding: 0.8rem;
+  border: 1px solid #ddd;
   text-align: center;
-  border-bottom: 1px solid #eee;
 }
 
 th {
-  background-color: #f7f7f7;
+  background-color: #f0f0f0;
+  font-weight: bold;
+}
+
+.labor {
   font-weight: bold;
 }
 
 .total {
-  margin-top: 1rem;
-  font-weight: bold;
+  margin-top: 1.5rem;
+  font-size: 1.3rem;
   color: #10b981;
-  font-size: 1.2rem;
+  font-weight: bold;
 }
 
 @media (max-width: 480px) {
@@ -64,10 +70,10 @@ th {
   }
 
   h1 {
-    font-size: 1.25rem;
+    font-size: 1.4rem;
   }
 
-  select, th, td {
+  table, th, td {
     font-size: 0.9rem;
   }
 }
