@@ -39,7 +39,7 @@ const PriceCheck = () => {
 
   return (
     <div className="container">
-      <h1>Çalışkanel Bosch Car Servis<br>Periyodik Bakım Fiyat Sorgulama</br> </h1>
+      <h1>Çalışkanel Bosch Car ServisPeriyodik Bakım Fiyat Sorgulama </h1>
 
       <select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)}>
         <option value="">Marka Seçin</option>
