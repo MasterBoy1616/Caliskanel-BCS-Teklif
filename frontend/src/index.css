@@ -1,14 +1,17 @@
+/* index.css */
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
-  @apply bg-gradient-to-br from-purple-700 to-blue-500 min-h-screen flex items-center justify-center p-4;
+  @apply bg-gradient-to-br from-purple-700 to-blue-500 min-h-screen flex items-center justify-center;
+  padding: 0 1rem;
 }
 
 .container {
-  @apply bg-white p-6 rounded-lg shadow-md w-full max-w-2xl;
+  @apply bg-white p-4 rounded-lg shadow-md w-full max-w-md md:max-w-2xl;
+  margin: 1rem;
 }
 
 h1 {
@@ -20,11 +23,11 @@ select {
 }
 
 table {
-  @apply w-full mb-4 text-sm;
+  @apply w-full mb-4;
 }
 
 th, td {
-  @apply p-2 text-left;
+  @apply p-2 text-left text-sm;
 }
 
 .total {
