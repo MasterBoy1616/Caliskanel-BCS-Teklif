@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  @apply bg-gradient-to-br from-purple-700 to-blue-500 min-h-screen flex items-center justify-center p-4;
+  @apply bg-gradient-to-br from-purple-700 to-blue-500 min-h-screen p-4 flex flex-col;
 }
 
 .container {
@@ -30,10 +30,14 @@ th, td {
   @apply text-lg font-bold text-green-600 text-center mt-4;
 }
 
-/* Ekstra sadece mobil için ufak ayarlar */
+/* SADECE MOBİLDE: Container tam ekran kaplasın */
 @media (max-width: 768px) {
+  body {
+    @apply p-2;
+  }
+
   .container {
-    @apply p-4;
+    @apply w-full h-full rounded-none shadow-none p-2;
   }
 
   h1 {
