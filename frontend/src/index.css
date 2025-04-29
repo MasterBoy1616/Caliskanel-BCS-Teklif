@@ -3,15 +3,15 @@
 @tailwind utilities;
 
 body {
-  @apply bg-gradient-to-br from-purple-700 to-blue-500 min-h-screen flex items-center justify-center;
+  @apply bg-gradient-to-br from-purple-700 to-blue-500 min-h-screen flex items-center justify-center p-4;
 }
 
 .container {
-  @apply bg-white p-8 rounded-lg shadow-md w-full max-w-md;
+  @apply bg-white p-8 rounded-lg shadow-md w-full max-w-md mx-auto;
 }
 
 h1 {
-  @apply text-2xl font-bold mb-6 text-center;
+  @apply text-2xl font-bold mb-6 text-center text-gray-800;
 }
 
 select {
@@ -19,30 +19,36 @@ select {
 }
 
 table {
-  @apply w-full mb-4;
+  @apply w-full text-sm mb-4;
 }
 
 th, td {
-  @apply p-2 text-left text-sm;
+  @apply p-2 text-left text-gray-700;
 }
 
 .total {
   @apply text-lg font-bold text-green-600 text-center mt-4;
 }
-@media only screend and (max-width:959px) {
-  .title {
-    font-size: 24px;
+
+/* Ekstra sadece mobil için ufak ayarlar */
+@media (max-width: 768px) {
+  .container {
+    @apply p-4;
+  }
+
+  h1 {
+    @apply text-xl;
   }
 
   select {
-    font-size: 20px;
+    @apply p-2 text-sm;
   }
 
-  .parts-table th, .parts-table td {
-    font-size: 18px;
+  th, td {
+    @apply p-1 text-xs;
   }
 
   .total {
-    font-size: 22px;
+    @apply text-base;
   }
 }
