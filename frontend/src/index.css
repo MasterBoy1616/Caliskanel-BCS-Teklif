@@ -1,17 +1,18 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
-  @apply bg-gradient-to-br from-purple-700 to-blue-500 min-h-screen p-4 flex flex-col;
+  @apply bg-gradient-to-br from-purple-700 to-blue-500 min-h-screen flex items-center justify-center p-4;
 }
 
 .container {
-  @apply bg-white p-8 rounded-lg shadow-md w-full max-w-md mx-auto;
+  @apply bg-white p-6 rounded-lg shadow-md w-full max-w-2xl;
 }
 
 h1 {
-  @apply text-2xl font-bold mb-6 text-center text-gray-800;
+  @apply text-2xl font-bold mb-6 text-center;
 }
 
 select {
@@ -19,40 +20,13 @@ select {
 }
 
 table {
-  @apply w-full text-sm mb-4;
+  @apply w-full mb-4 text-sm;
 }
 
 th, td {
-  @apply p-2 text-left text-gray-700;
+  @apply p-2 text-left;
 }
 
 .total {
   @apply text-lg font-bold text-green-600 text-center mt-4;
-}
-
-/* SADECE MOBİLDE: Container tam ekran kaplasın */
-@media (max-width: 768px) {
-  body {
-    @apply p-2;
-  }
-
-  .container {
-    @apply w-full h-full rounded-none shadow-none p-2;
-  }
-
-  h1 {
-    @apply text-xl;
-  }
-
-  select {
-    @apply p-2 text-sm;
-  }
-
-  th, td {
-    @apply p-1 text-xs;
-  }
-
-  .total {
-    @apply text-base;
-  }
 }
